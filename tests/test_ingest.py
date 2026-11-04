@@ -137,8 +137,9 @@ def test_chat_loop_passes_input_to_agent_and_stops_on_exit(monkeypatch, capsys):
     from main import run_chat
 
     class FakeAgent:
-        def invoke(self, state):
-            return {"messages": state["messages"] + [AIMessage(content="응답")]}
+        def invoke(self, state, config):
+            assert config["configurable"]["thread_id"]
+            return {"messages": [AIMessage(content="응답")]}
 
     inputs = iter(["안녕", "exit"])
     monkeypatch.setattr("builtins.input", lambda _="": next(inputs))

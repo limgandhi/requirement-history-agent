@@ -69,7 +69,7 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 ## 가정 (Assumptions)
 
 - 진입점은 루트 `main.py`이며 인자 없이 `python main.py`로 에이전트 대화(chat)만 시작한다. 기능별 명령과 `--db`, `--chroma` 옵션은 없고 DB·Chroma 경로는 `config` 기본값을 쓴다
-- 기능은 `interfaces/tools/tools.py`의 LangChain tool(ingest_document, ask_history, add_requirement, update_requirement, delete_requirement, create_new_version)로 제공하며, `main.py`의 chat이 `interfaces/agent/agent.py`의 에이전트로 자연어 입력을 받아 tool을 호출한다. 요청자·수정자는 tool 인자로 필수이고 비면 서비스 계층이 거부한다. 모든 기능은 `chat`(tool)으로만 쓴다
+- 기능은 `interfaces/tools/tools.py`의 LangChain tool(ingest_document, ask_history, add_requirement, update_requirement, delete_requirement, create_new_version)로 제공하며, `main.py`의 chat이 `interfaces/agent/agent.py`의 LangGraph 에이전트(agent 노드 ↔ ToolNode, 대화 기록은 체크포인터가 thread_id별로 보관)로 자연어 입력을 받아 tool을 호출한다. 요청자·수정자는 tool 인자로 필수이고 비면 서비스 계층이 거부한다. 모든 기능은 `chat`(tool)으로만 쓴다
 - 코드 구조는 `interfaces/`(agent, tools) → `core/`(service, ingest, chunking, extraction, qa, manual) → `infra/`(db, indexing, llm) 3계층이고 `config/`와 진입점 `main.py`는 루트에 둔다. 의존은 한 방향으로만 흐른다
 - SQLite 파일 경로는 `data/requirements.db`, Chroma persist_directory는 `data/chroma_db`, 컬렉션 이름은 `requirements_history`로 확정했다(T6, `config/config.py`)
 - Titan 출력 차원은 기본값 1024로 시작한다

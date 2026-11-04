@@ -1,5 +1,15 @@
-"""Tool-calling agent. Picks tools from natural language; business logic stays in app.service."""
-from langchain.agents import create_agent
+"""Tool-calling agent as a LangGraph graph. Business logic stays in core.service.
+
+START -> agent (LLM with tools bound) -> tools (ToolNode) -> agent ... -> END
+Conversation history lives in the checkpointer, keyed by thread_id.
+"""
+from typing import Annotated, TypedDict
+
+from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph import START, StateGraph
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
 
 from infra.llm.llm import get_llm
 from interfaces.tools.tools import build_tools
@@ -13,13 +23,26 @@ SYSTEM_PROMPT = """당신은 요구사항 이력 에이전트다. 반드시 제�
 - 한국어로 답한다."""
 
 
-def build_agent(db_path, chroma_dir, llm=None, store=None, output_dir=None):
+class AgentState(TypedDict):
+    messages: Annotated[list, add_messages]
+
+
+def build_agent(db_path, chroma_dir, llm=None, store=None, output_dir=None, checkpointer=None):
+    """Compile the graph. Call it with config={"configurable": {"thread_id": ...}}."""
     kwargs = {"output_dir": output_dir} if output_dir else {}
-    return create_agent(
-        llm or get_llm(),
-        build_tools(db_path, chroma_dir, llm=llm, store=store, **kwargs),
-        system_prompt=SYSTEM_PROMPT,
-    )
+    tools = build_tools(db_path, chroma_dir, llm=llm, store=store, **kwargs)
+    model = (llm or get_llm()).bind_tools(tools)
+
+    def call_model(state: AgentState) -> dict:
+        return {"messages": [model.invoke([SystemMessage(SYSTEM_PROMPT)] + state["messages"])]}
+
+    graph = StateGraph(AgentState)
+    graph.add_node("agent", call_model)
+    graph.add_node("tools", ToolNode(tools))
+    graph.add_edge(START, "agent")
+    graph.add_conditional_edges("agent", tools_condition)  # tool_calls -> "tools", else END
+    graph.add_edge("tools", "agent")
+    return graph.compile(checkpointer=checkpointer or InMemorySaver())
 
 
 def reply_text(message) -> str:
