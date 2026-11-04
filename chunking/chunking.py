@@ -21,7 +21,7 @@ class Chunk:
     content: str = ""
 
 
-def chunk_markdown(text: str) -> list[Chunk]:
+def chunk_markdown(text: str, keep_empty: bool = False) -> list[Chunk]:
     chunks: list[Chunk] = []
     stack: list[tuple[int, str]] = []  # (level, heading) of current ancestors
     current: Chunk | None = None
@@ -32,7 +32,7 @@ def chunk_markdown(text: str) -> list[Chunk]:
         nonlocal current, body
         if current is not None:
             content = "\n".join(body).strip()
-            if content:
+            if content or keep_empty:  # keep_empty: rebuild a whole document
                 current.content = content
                 current.position = len(chunks)
                 chunks.append(current)

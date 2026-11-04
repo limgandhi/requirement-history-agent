@@ -18,8 +18,8 @@ _REQ_KEY = re.compile(r"^(REQ-\d+)\b", re.IGNORECASE)
 
 @dataclass
 class SearchHit:
-    chunk_id: int
-    document_id: int
+    chunk_id: int | None  # None for vectors written from a manual change
+    document_id: int | None
     document_name: str
     version: int
     heading: str
@@ -69,6 +69,29 @@ def index_document(conn: sqlite3.Connection, document_id: int, store: Chroma | N
     return len(ids)
 
 
+def upsert_requirement_vector(store: Chroma, req_key: str, title: str, content: str, requirement_id: int) -> str:
+    """Write the current text of a requirement as vector 'req-<id>'; same id overwrites.
+
+    Used for manual changes. Chunk vectors of the original document are left
+    untouched here; call drop_old_vectors() after this succeeds.
+    """
+    vector_id = f"req-{requirement_id}"
+    heading = f"{req_key} {title}"
+    store.add_texts(
+        texts=[f"{heading}\n{content}"],
+        metadatas=[{"req_key": req_key, "heading": heading, "document_name": "manual", "version": 0}],
+        ids=[vector_id],
+    )
+    return vector_id
+
+
+def drop_old_vectors(store: Chroma, req_key: str, keep_id: str | None = None) -> None:
+    """Delete every vector of a requirement except keep_id (None: delete all)."""
+    ids = [i for i in store.get(where={"req_key": req_key})["ids"] if i != keep_id]
+    if ids:
+        store.delete(ids=ids)
+
+
 def search_chunks(query: str, k: int = 4, store: Chroma | None = None) -> list[SearchHit]:
     store = store or get_vectorstore()
     hits = []
@@ -76,10 +99,10 @@ def search_chunks(query: str, k: int = 4, store: Chroma | None = None) -> list[S
         m = doc.metadata
         hits.append(
             SearchHit(
-                chunk_id=m["chunk_id"],
-                document_id=m["document_id"],
-                document_name=m["document_name"],
-                version=m["version"],
+                chunk_id=m.get("chunk_id"),
+                document_id=m.get("document_id"),
+                document_name=m.get("document_name", "manual"),
+                version=m.get("version", 0),
                 heading=m["heading"],
                 req_key=m.get("req_key"),
                 content=doc.page_content,

@@ -100,7 +100,7 @@ def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 
     contexts = {}
     for key in keys:
         ctx = _requirement_context(conn, key)
-        if ctx:
+        if ctx and ctx[0]["status"] == "active":  # deleted ones are not current requirements
             contexts[key] = ctx
     if not contexts:
         return Answer(text="관련 요구사항 출처를 찾지 못했다.", found=False)

@@ -2,6 +2,7 @@
 from pathlib import Path
 
 from db.db import connect, init_schema
+from db.validation import require_actors
 from indexing.indexing import get_vectorstore, index_document
 from ingest.ingest import IngestResult, ingest_document
 from qa.qa import Answer, ask
@@ -23,6 +24,8 @@ def _undo_ingest(conn, store, document_id: int) -> None:
 
 
 def ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=None, store=None) -> IngestResult:
+    # Validate first so a bad call does not even create the DB file.
+    requester, modifier = require_actors(requester, modifier)
     conn = connect(db_path)
     try:
         init_schema(conn)

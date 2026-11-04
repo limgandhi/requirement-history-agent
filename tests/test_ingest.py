@@ -123,9 +123,7 @@ def test_cli_ingest_without_actors_fails_and_saves_nothing(tmp_path, capsys):
     code = main(["--db", str(db), "--chroma", str(tmp_path / "chroma"), "ingest", str(SAMPLES / "PRDv1.md")])
     assert code == 1
     assert "필수" in capsys.readouterr().err
-    c = connect(db)
-    assert _total_rows(c) == 0
-    c.close()
+    assert not db.exists()  # validation runs before the DB is even created
 
 
 def test_cli_ask_without_db_reports_error(tmp_path, capsys):
