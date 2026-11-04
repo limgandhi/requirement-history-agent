@@ -11,3 +11,6 @@ EMBEDDING_MODEL_ID = "amazon.titan-embed-text-v2:0"
 EMBEDDING_DIMENSIONS = 1024
 
 LLM_TEMPERATURE = 0
+
+CHROMA_DIR = "data/chroma_db"
+CHROMA_COLLECTION = "requirements_history"

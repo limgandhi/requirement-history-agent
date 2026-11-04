@@ -69,7 +69,7 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 ## 가정 (Assumptions)
 
 - CLI 진입점 이름, 하위 명령어(ingest/add/update/delete/ask 등) 표기는 구현 시 정한다
-- SQLite 파일 경로와 새 Chroma 컬렉션/persist_directory 이름은 구현 시 정한다(예: `data/requirements.db`, `data/chroma_db`, 컬렉션 `requirements_history`)
+- SQLite 파일 경로는 `data/requirements.db`, Chroma persist_directory는 `data/chroma_db`, 컬렉션 이름은 `requirements_history`로 확정했다(T6, `config/config.py`)
 - Titan 출력 차원은 기본값 1024로 시작한다
 - 폴백 LLM은 기본 LLM(Sonnet) 호출이 실패(스로틀링, 오류 등)했을 때만 전환하는 것으로 해석한다. 전환 조건과 재시도 횟수는 구현 시 정한다
 - 새 버전 PRD 문서의 생성 시점(수동 변경마다 자동 / 사용자가 명령으로 요청), 저장 위치, 파일 이름 규칙(예: `PRDv2.md`처럼 버전 번호를 하나 올림)은 구현 시 정한다. "수동으로 수정된 부분"에는 수동 추가·수정·삭제를 모두 포함한다고 해석한다

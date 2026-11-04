@@ -1,7 +1,7 @@
 """Bedrock LLM / embedding factories. Fallback switching is added later (T14)."""
 from langchain_aws import BedrockEmbeddings, ChatBedrockConverse
 
-from common import config
+from config import config
 
 
 def get_llm(model_id: str = config.LLM_MODEL_ID) -> ChatBedrockConverse:
