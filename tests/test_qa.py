@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from db.db import connect, init_schema
-from indexing.indexing import get_vectorstore, index_document
-from ingest.ingest import ingest_document
-from qa.qa import _LLMAnswer, ask
+from infra.db.db import connect, init_schema
+from infra.indexing.indexing import get_vectorstore, index_document
+from core.ingest.ingest import ingest_document
+from core.qa.qa import _LLMAnswer, ask
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

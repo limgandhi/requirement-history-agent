@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from chunking.chunking import chunk_markdown
-from db.db import connect, init_schema
-from extraction.extraction import extract_requirements
-from ingest.ingest import ingest_document
-from manual.manual import add_requirement, delete_requirement, update_requirement
-from manual.new_version import generate_new_version
+from core.chunking.chunking import chunk_markdown
+from infra.db.db import connect, init_schema
+from core.extraction.extraction import extract_requirements
+from core.ingest.ingest import ingest_document
+from core.manual.manual import add_requirement, delete_requirement, update_requirement
+from core.manual.new_version import generate_new_version
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

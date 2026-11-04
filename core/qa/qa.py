@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
-from indexing.indexing import search_chunks
+from infra.indexing.indexing import search_chunks
 
 _PROMPT = """너는 요구사항 이력 질의응답 도우미다. 아래 [근거]에 있는 내용만으로 질문에 답해라.
 
@@ -106,7 +106,7 @@ def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 
         return Answer(text="관련 요구사항 출처를 찾지 못했다.", found=False)
 
     if llm is None:
-        from llm.llm import get_llm
+        from infra.llm.llm import get_llm
 
         llm = get_llm()
     context = "\n\n".join(_render(*c) for c in contexts.values())

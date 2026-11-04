@@ -6,7 +6,7 @@ transaction together with its history row (source_type='manual').
 import re
 import sqlite3
 
-from db.validation import require_actors
+from infra.db.validation import require_actors
 
 _REQ_KEY = re.compile(r"^REQ-\d+$")
 
@@ -25,8 +25,13 @@ def add_requirement(
     requester: str,
     modifier: str,
     req_key: str | None = None,
+    store=None,
 ) -> str:
-    """Add one requirement by hand and record it in history. Returns its req_key."""
+    """Add one requirement by hand and record it in history. Returns its req_key.
+
+    If a Chroma store is given, the new requirement is indexed so searches find
+    it; a Chroma failure rolls the SQLite change back.
+    """
     requester, modifier = require_actors(requester, modifier)
 
     title = (title or "").strip()
@@ -54,6 +59,10 @@ def add_requirement(
             "VALUES (?, 'add', 'manual', ?, ?, ?)",
             (requirement_id, content, requester, modifier),
         )
+        if store is not None:
+            from infra.indexing.indexing import upsert_requirement_vector
+
+            upsert_requirement_vector(store, req_key, title, content, requirement_id)
     return req_key
 
 
@@ -98,7 +107,7 @@ def update_requirement(
             (req["id"], req["content"], content, requester, modifier),
         )
         if store is not None:
-            from indexing.indexing import drop_old_vectors, upsert_requirement_vector
+            from infra.indexing.indexing import drop_old_vectors, upsert_requirement_vector
 
             new_id = upsert_requirement_vector(store, req_key, req["title"], content, req["id"])
             drop_old_vectors(store, req_key, keep_id=new_id)
@@ -138,6 +147,6 @@ def delete_requirement(
             (req["id"], req["content"], requester, modifier),
         )
         if store is not None:
-            from indexing.indexing import drop_old_vectors
+            from infra.indexing.indexing import drop_old_vectors
 
             drop_old_vectors(store, req_key)

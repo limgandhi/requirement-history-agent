@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from app.service import ingest_and_index
-from db.db import TABLES, connect, init_schema
-from db.validation import require_actors
-from ingest.ingest import ingest_document
-from manual.manual import add_requirement, delete_requirement, update_requirement
+from core.service.service import ingest_and_index
+from infra.db.db import TABLES, connect, init_schema
+from infra.db.validation import require_actors
+from core.ingest.ingest import ingest_document
+from core.manual.manual import add_requirement, delete_requirement, update_requirement
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

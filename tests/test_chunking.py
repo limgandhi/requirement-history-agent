@@ -1,7 +1,7 @@
 """T3: heading-based chunking."""
 from pathlib import Path
 
-from chunking.chunking import chunk_file, chunk_markdown
+from core.chunking.chunking import chunk_file, chunk_markdown
 
 SAMPLE_V1 = Path(__file__).resolve().parent.parent / "samples" / "PRDv1.md"
 

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from langchain_chroma import Chroma
 
 from config import config
-from llm.llm import get_embeddings
+from infra.llm.llm import get_embeddings
 
 _REQ_KEY = re.compile(r"^(REQ-\d+)\b", re.IGNORECASE)
 

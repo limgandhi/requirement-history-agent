@@ -1,5 +1,5 @@
 """T1 smoke test: one real call each to the LLM and the embedding model."""
-from llm.llm import get_embeddings, get_llm
+from infra.llm.llm import get_embeddings, get_llm
 
 
 def test_llm_responds():

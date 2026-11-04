@@ -2,7 +2,7 @@
 
 ## 목표 (Goal)
 
-Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 요구사항을 추출하고 요청자·수정자를 필수로 기록하며 이력을 질의응답하고, 수동 수정이 있으면 반영된 새 버전 PRD 문서를 생성하는 CLI 에이전트를 새로 만든다. 변경 자동 감지와 웹 UI는 1차 이후에 확장한다.
+Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 요구사항을 추출하고 요청자·수정자를 필수로 기록하며 이력을 질의응답하고, 수동 수정이 있으면 반영된 새 버전 PRD 문서를 생성하는 대화형 에이전트를 새로 만든다. 변경 자동 감지와 웹 UI는 1차 이후에 확장한다.
 
 - **프로젝트 유형:** greenfield
 
@@ -52,7 +52,7 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 
 - Markdown(.md) 문서만 입력으로 지원한다
 - 구조화 데이터(documents, chunks, requirements, requirement_history 등 목적별 테이블)는 SQLite에 저장한다
-- 임베딩 저장·의미 검색은 Chroma의 새 컬렉션을 사용하며, day*_practice/의 chroma_db 및 sds_policies 컬렉션은 사용·수정하지 않는다
+- 임베딩 저장·의미 검색은 Chroma의 새 컬렉션을 사용하며, practices/day*_practice/의 chroma_db 및 sds_policies 컬렉션은 사용·수정하지 않는다
 - LLM은 Bedrock `global.anthropic.claude-sonnet-4-5-20250929-v1:0`, 리전 `us-east-1`, temperature 0
 - 폴백(fallback) LLM은 Bedrock `global.anthropic.claude-haiku-4-5-20251001-v1:0`을 쓴다 (리전, temperature는 기본 LLM과 동일)
 - 임베딩은 Bedrock `amazon.titan-embed-text-v2:0`, 리전 `us-east-1`
@@ -61,20 +61,22 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 - 수동 추가·수정·삭제 이력에는 수동/자동 구분을 기록한다
 - 수동으로 수정된 부분이 있으면 반영된 새 버전의 PRD 문서를 Markdown으로 생성한다. 원본 입력 문서는 수정하지 않고 새 파일로 만든다
 - 새 버전 문서에서 수정되지 않은 요구사항은 이전 버전과 내용이 같아야 한다
-- 1단계는 CLI, 이후 웹 UI를 추가하므로 핵심 로직은 UI와 분리한다
-- 새 코드는 프로젝트 루트에 구현하고 day*_practice/ 폴더는 참고용으로만 두며 수정하지 않는다
+- 1단계는 터미널 대화형 에이전트, 이후 웹 UI를 추가하므로 핵심 로직은 UI와 분리한다
+- 새 코드는 프로젝트 루트에 구현하고 practices/day*_practice/ 폴더는 참고용으로만 두며 수정하지 않는다
 - 응답 속도는 요구사항이 아니다. 정확한 출처와 답변이 우선이다
 - 출처를 찾지 못한 요구사항은 지어내지 않고 "찾지 못했다"고 알린 뒤, 사용자가 대안을 고르도록 안내한다
 
 ## 가정 (Assumptions)
 
-- CLI 진입점 이름, 하위 명령어(ingest/add/update/delete/ask 등) 표기는 구현 시 정한다
+- 진입점은 루트 `main.py`이며 인자 없이 `python main.py`로 에이전트 대화(chat)만 시작한다. 기능별 명령과 `--db`, `--chroma` 옵션은 없고 DB·Chroma 경로는 `config` 기본값을 쓴다
+- 기능은 `interfaces/tools/tools.py`의 LangChain tool(ingest_document, ask_history, add_requirement, update_requirement, delete_requirement, create_new_version)로 제공하며, `main.py`의 chat이 `interfaces/agent/agent.py`의 에이전트로 자연어 입력을 받아 tool을 호출한다. 요청자·수정자는 tool 인자로 필수이고 비면 서비스 계층이 거부한다. 모든 기능은 `chat`(tool)으로만 쓴다
+- 코드 구조는 `interfaces/`(agent, tools) → `core/`(service, ingest, chunking, extraction, qa, manual) → `infra/`(db, indexing, llm) 3계층이고 `config/`와 진입점 `main.py`는 루트에 둔다. 의존은 한 방향으로만 흐른다
 - SQLite 파일 경로는 `data/requirements.db`, Chroma persist_directory는 `data/chroma_db`, 컬렉션 이름은 `requirements_history`로 확정했다(T6, `config/config.py`)
 - Titan 출력 차원은 기본값 1024로 시작한다
 - 폴백 LLM은 기본 LLM(Sonnet) 호출이 실패(스로틀링, 오류 등)했을 때만 전환하는 것으로 해석한다. 전환 조건과 재시도 횟수는 구현 시 정한다
 - 새 버전 PRD 문서는 사용자가 `new-version` 명령으로 요청할 때 생성한다(자동 생성 안 함). 저장 위치는 `data/generated/`, 파일 이름은 `<문서명>v<최신 버전+1>.md`(예: `PRDv2.md`)이며 기존 파일은 덮어쓰지 않는다. 직전 문서와 요구사항이 같으면(수동 변경 없음) 만들지 않는다. "수동으로 수정된 부분"에는 수동 추가·수정·삭제를 모두 포함한다고 해석한다(T12a 확정)
 - 새 버전 문서의 형식은 입력 문서와 같은 Markdown 구조(요구사항마다 `###` 헤딩)로 가정한다
-- 청킹은 Markdown 헤딩 단위를 기본으로 하며 `day*_practice/chunking_md.py`를 참고한다
+- 청킹은 Markdown 헤딩 단위를 기본으로 하며 `practices/day*_practice/chunking_md.py`를 참고한다
 - "차안"은 "대안"으로 해석한다. 대안의 종류(비슷한 요구사항 후보, 다른 버전 확인, 직접 입력 등)는 구현 시 정한다
 - "20~30명"은 20~30명으로 해석한다
 - 요구사항 100개 이상 규모를 검증할 큰 샘플은 별도로 만든다. 현재 샘플은 8~9개뿐이다
@@ -117,8 +119,8 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 | source_accuracy | 답변의 출처(문서, 버전, 요청자, 수정자)가 정확하다 | 0.3 |
 | traceability | 모든 이력은 문서·버전·요청자·수정자로 추적 가능해야 한다 | 0.3 |
 | honest_not_found | 출처를 모르면 지어내지 않고 모른다고 알리며 대안을 안내한다 | 0.15 |
-| separation | 핵심 로직이 CLI와 분리되어 웹 UI 확장이 가능하다 | 0.15 |
-| isolation | day*_practice/와 기존 Chroma 데이터를 건드리지 않는다 | 0.1 |
+| separation | 핵심 로직이 대화 진입점·에이전트와 분리되어 웹 UI 확장이 가능하다 | 0.15 |
+| isolation | practices/day*_practice/와 기존 Chroma 데이터를 건드리지 않는다 | 0.1 |
 
 ## 종료 조건 (Exit Conditions)
 
@@ -126,7 +128,7 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 
 ## 참고 자료 (References)
 
-- **참고 경로:** `day*_practice/` — Bedrock LLM/임베딩, Chroma, Markdown 청킹 사용 예시. 참고용이며 수정하지 않음
+- **참고 경로:** `practices/day*_practice/` — Bedrock LLM/임베딩, Chroma, Markdown 청킹 사용 예시. 참고용이며 수정하지 않음
 - **기존 패턴:**
   - LangChain(`langchain_aws`, `langchain_chroma`) 사용
   - `load_dotenv()`로 `.env` 인증 로드

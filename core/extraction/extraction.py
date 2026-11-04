@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from chunking.chunking import Chunk
+from core.chunking.chunking import Chunk
 
 _REQ_HEADING = re.compile(r"^(REQ-\d+)\s+(.+)$", re.IGNORECASE)
 
@@ -73,7 +73,7 @@ def _extract_with_llm(chunks: list[Chunk], llm=None) -> list[Requirement]:
     if not chunks:
         return []
     if llm is None:
-        from llm.llm import get_llm  # imported lazily so ID-based extraction needs no AWS
+        from infra.llm.llm import get_llm  # imported lazily so ID-based extraction needs no AWS
 
         llm = get_llm()
 

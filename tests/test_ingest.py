@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from db.db import TABLES, connect, init_schema
-from extraction.extraction import _ExtractedList
-from ingest.ingest import ingest_document, parse_document_name
+from infra.db.db import TABLES, connect, init_schema
+from core.extraction.extraction import _ExtractedList
+from core.ingest.ingest import ingest_document, parse_document_name
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 
@@ -101,33 +101,46 @@ def test_parse_document_name(filename, expected):
     assert parse_document_name(filename) == expected
 
 
-# ---- T8: CLI ingest -> ask on an empty DB ----
-def test_cli_ingest_then_ask(tmp_path, capsys):
-    from cli.cli import main
+# ---- T8: ingest -> ask through the tools on an empty DB ----
+def _tools(tmp_path, name="c.db"):
+    from interfaces.tools.tools import build_tools
 
-    base = ["--db", str(tmp_path / "c.db"), "--chroma", str(tmp_path / "chroma")]
-    assert main(base + ["ingest", str(SAMPLES / "PRDv1.md"), "--requester", "lee", "--modifier", "kim"]) == 0
-    capsys.readouterr()
+    return {t.name: t for t in build_tools(tmp_path / name, tmp_path / "chroma")}
 
-    assert main(base + ["ask", "투표 기간은 최대 며칠인가?"]) == 0  # one real Bedrock call
-    out = capsys.readouterr().out
+
+def test_tool_ingest_then_ask(tmp_path):
+    t = _tools(tmp_path)
+    out = t["ingest_document"].invoke(
+        {"path": str(SAMPLES / "PRDv1.md"), "requester": "lee", "modifier": "kim"})
+    assert out.startswith("입력 완료")
+
+    out = t["ask_history"].invoke({"question": "투표 기간은 최대 며칠인가?"})  # one real Bedrock call
     assert "7일" in out
     for expected in ("PRDv1", "REQ-003", "lee", "kim"):
         assert expected in out
 
 
-def test_cli_ingest_without_actors_fails_and_saves_nothing(tmp_path, capsys):
-    from cli.cli import main
-
-    db = tmp_path / "c.db"
-    code = main(["--db", str(db), "--chroma", str(tmp_path / "chroma"), "ingest", str(SAMPLES / "PRDv1.md")])
-    assert code == 1
-    assert "필수" in capsys.readouterr().err
-    assert not db.exists()  # validation runs before the DB is even created
+def test_tool_ingest_without_actors_fails_and_saves_nothing(tmp_path):
+    out = _tools(tmp_path)["ingest_document"].invoke(
+        {"path": str(SAMPLES / "PRDv1.md"), "requester": "", "modifier": ""})
+    assert out.startswith("오류") and "필수" in out
+    assert not (tmp_path / "c.db").exists()  # validation runs before the DB is even created
 
 
-def test_cli_ask_without_db_reports_error(tmp_path, capsys):
-    from cli.cli import main
+def test_tool_ask_without_db_reports_error(tmp_path):
+    out = _tools(tmp_path, "none.db")["ask_history"].invoke({"question": "q"})
+    assert out.startswith("오류") and "ingest" in out
 
-    assert main(["--db", str(tmp_path / "none.db"), "--chroma", str(tmp_path / "x"), "ask", "q"]) == 1
-    assert "ingest" in capsys.readouterr().err
+
+def test_chat_loop_passes_input_to_agent_and_stops_on_exit(monkeypatch, capsys):
+    from langchain_core.messages import AIMessage
+    from main import run_chat
+
+    class FakeAgent:
+        def invoke(self, state):
+            return {"messages": state["messages"] + [AIMessage(content="응답")]}
+
+    inputs = iter(["안녕", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _="": next(inputs))
+    run_chat(agent=FakeAgent())
+    assert "응답" in capsys.readouterr().out

@@ -12,9 +12,9 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from chunking.chunking import chunk_markdown
-from db.validation import require_actors
-from extraction.extraction import extract_requirements
+from core.chunking.chunking import chunk_markdown
+from infra.db.validation import require_actors
+from core.extraction.extraction import extract_requirements
 
 
 @dataclass

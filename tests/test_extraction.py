@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from chunking.chunking import chunk_file, chunk_markdown
-from extraction.extraction import (
+from core.chunking.chunking import chunk_file, chunk_markdown
+from core.extraction.extraction import (
     Requirement,
     _ExtractedItem,
     _ExtractedList,
