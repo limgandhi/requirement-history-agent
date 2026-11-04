@@ -72,7 +72,7 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 - SQLite 파일 경로는 `data/requirements.db`, Chroma persist_directory는 `data/chroma_db`, 컬렉션 이름은 `requirements_history`로 확정했다(T6, `config/config.py`)
 - Titan 출력 차원은 기본값 1024로 시작한다
 - 폴백 LLM은 기본 LLM(Sonnet) 호출이 실패(스로틀링, 오류 등)했을 때만 전환하는 것으로 해석한다. 전환 조건과 재시도 횟수는 구현 시 정한다
-- 새 버전 PRD 문서의 생성 시점(수동 변경마다 자동 / 사용자가 명령으로 요청), 저장 위치, 파일 이름 규칙(예: `PRDv2.md`처럼 버전 번호를 하나 올림)은 구현 시 정한다. "수동으로 수정된 부분"에는 수동 추가·수정·삭제를 모두 포함한다고 해석한다
+- 새 버전 PRD 문서는 사용자가 `new-version` 명령으로 요청할 때 생성한다(자동 생성 안 함). 저장 위치는 `data/generated/`, 파일 이름은 `<문서명>v<최신 버전+1>.md`(예: `PRDv2.md`)이며 기존 파일은 덮어쓰지 않는다. 직전 문서와 요구사항이 같으면(수동 변경 없음) 만들지 않는다. "수동으로 수정된 부분"에는 수동 추가·수정·삭제를 모두 포함한다고 해석한다(T12a 확정)
 - 새 버전 문서의 형식은 입력 문서와 같은 Markdown 구조(요구사항마다 `###` 헤딩)로 가정한다
 - 청킹은 Markdown 헤딩 단위를 기본으로 하며 `day*_practice/chunking_md.py`를 참고한다
 - "차안"은 "대안"으로 해석한다. 대안의 종류(비슷한 요구사항 후보, 다른 버전 확인, 직접 입력 등)는 구현 시 정한다
