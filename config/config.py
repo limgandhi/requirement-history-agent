@@ -1,4 +1,6 @@
 """Central settings. Credentials come from .env (never hard-coded)."""
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,3 +16,7 @@ LLM_TEMPERATURE = 0
 
 CHROMA_DIR = "data/chroma_db"
 CHROMA_COLLECTION = "requirements_history"
+
+# LLM / tool call log (JSON Lines). Set TRACE_ENABLED=0 in .env to switch it off.
+TRACE_LOG_PATH = "data/logs/llm_trace.jsonl"
+TRACE_ENABLED = os.getenv("TRACE_ENABLED", "1") != "0"

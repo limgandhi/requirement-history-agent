@@ -13,6 +13,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.types import Command
 
 from infra.llm.llm import get_llm
+from infra.llm.tracer import get_tracer
 from interfaces.tools.tools import build_tools
 
 SYSTEM_PROMPT = """당신은 요구사항 이력 에이전트다. 반드시 제공된 tool로만 일한다.
@@ -31,7 +32,7 @@ class AgentState(TypedDict):
 
 def build_agent(db_path, chroma_dir, llm=None, store=None, output_dir=None, checkpointer=None,
                 allowed_input_dirs=None):
-    """Compile the graph. Call it with config={"configurable": {"thread_id": ...}}."""
+    """Compile the graph. Call it with run_config(thread_id) so LLM and tool calls are traced."""
     kwargs = {"output_dir": output_dir} if output_dir else {}
     kwargs["allowed_input_dirs"] = allowed_input_dirs
     tools = build_tools(db_path, chroma_dir, llm=llm, store=store, **kwargs)
@@ -54,6 +55,12 @@ def reply_text(message) -> str:
     if isinstance(content, str):
         return content
     return "".join(b.get("text", "") for b in content if isinstance(b, dict))
+
+
+def run_config(thread_id: str) -> dict:
+    """Config for one conversation: its memory key and the trace callback (LLM / tool call log)."""
+    tracer = get_tracer()
+    return {"configurable": {"thread_id": thread_id}, "callbacks": [tracer] if tracer else []}
 
 
 def user_message(text: str) -> dict:

@@ -31,6 +31,11 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 - 테스트: pytest
 - 가상환경은 루트의 `.venv`를 쓴다. 의존성은 `requirements.txt`에 있으며, 새 패키지를 추가할 때는 먼저 확인한다.
 
+## LLM 호출 로그
+
+- 에이전트를 부르는 곳(`main.py`, `web/app.py`)은 `interfaces/agent/agent.py`의 `run_config(thread_id)`로 설정을 만든다. 여기에 trace 콜백이 들어 있어 LLM·도구 호출이 `data/logs/llm_trace.jsonl`에 JSON Lines로 남는다. 설정을 직접 만들면 로그가 빠진다.
+- 로그에는 요구사항 내용이 들어가므로 `data/` 밖으로 옮기거나 커밋하지 않는다. 끄려면 `.env`에 `TRACE_ENABLED=0`.
+
 ## 반드시 지킬 규칙
 
 1. **요청자·수정자 필수:** 모든 변경(1차는 수동 추가·수정·삭제)에 `requester`와 `modifier`를 받고, 비어 있으면 저장을 거부한다. 어떤 경로로도 우회할 수 없어야 한다.
@@ -45,7 +50,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
      - 루트 `web/`(FastAPI 서버와 정적 화면)도 `main.py`처럼 서비스 진입점이다. 웹 서버는 `python -m uvicorn --factory web.app:create_app --host 0.0.0.0 --port 8000`으로 띄운다. 여기에도 로직을 넣지 않고 `core/service`와 에이전트(`step`, `resume`)만 호출한다.
      - 루트 `main.py`가 서비스 진입점이다. 인자 없이 `python main.py`로 에이전트 대화만 시작하며 기능별 명령은 없다. 여기에도 로직을 넣지 않는다.
      - `core/`: `service/`(유스케이스 진입점), `ingest/`, `chunking/`, `extraction/`, `qa/`, `manual/`, `change_detection/`(2차: 새 버전 문서와 현재 요구사항 비교). UI와 무관한 핵심 로직.
-     - `infra/`: `db/`(SQLite), `indexing/`(Chroma), `llm/`(Bedrock). 외부 시스템 연결.
+     - `infra/`: `db/`(SQLite), `indexing/`(Chroma), `llm/`(Bedrock, 폴백, LLM·도구 호출 로그 `tracer.py`). 외부 시스템 연결.
 6. **기존 자료는 건드리지 않는다:** `practices/day*_practice/`는 참고용이다. 수정하지 않고, 그 안의 `chroma_db`와 `sds_policies` 컬렉션도 사용하지 않는다.
 7. **새 코드는 루트에 둔다:** `practices/day*_practice/` 안에 새 코드를 만들지 않는다.
 8. **자격증명을 코드에 넣지 않는다:** AWS 인증은 `.env`(`load_dotenv`)로만 한다. `.env`를 커밋하거나 출력하지 않는다.

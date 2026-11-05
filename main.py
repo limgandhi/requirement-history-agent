@@ -9,7 +9,7 @@ import uuid
 from config import config
 from infra.db.db import DEFAULT_DB_PATH
 from infra.llm.llm import fallback_count
-from interfaces.agent.agent import build_agent, run_turn
+from interfaces.agent.agent import build_agent, run_config, run_turn
 
 
 _YES = ("y", "yes", "예", "네", "응", "ㅇ")
@@ -36,7 +36,7 @@ def cli_respond(payload: dict):
 
 def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) -> None:
     agent = agent or build_agent(str(db_path), chroma_dir)
-    run_config = {"configurable": {"thread_id": str(uuid.uuid4())}}  # one conversation per run
+    cfg = run_config(str(uuid.uuid4()))  # one conversation per run; LLM / tool calls are traced
     print("에이전트를 시작합니다. 종료하려면 빈 줄 또는 exit 을 입력하세요.")
     while True:
         try:
@@ -46,7 +46,7 @@ def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) 
         if not text or text.lower() in ("exit", "quit"):
             break
         before = fallback_count()
-        print(run_turn(agent, text, run_config, cli_respond))
+        print(run_turn(agent, text, cfg, cli_respond))
         if fallback_count() > before:  # tell the user a lighter model answered
             print("※ 기본 모델 호출이 실패해 폴백 모델(Haiku)로 답했습니다.")
 
