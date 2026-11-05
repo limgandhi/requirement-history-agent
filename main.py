@@ -8,6 +8,7 @@ import uuid
 
 from config import config
 from infra.db.db import DEFAULT_DB_PATH
+from infra.llm.llm import fallback_count
 from interfaces.agent.agent import build_agent, run_turn
 
 
@@ -44,7 +45,10 @@ def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) 
             break
         if not text or text.lower() in ("exit", "quit"):
             break
+        before = fallback_count()
         print(run_turn(agent, text, run_config, cli_respond))
+        if fallback_count() > before:  # tell the user a lighter model answered
+            print("※ 기본 모델 호출이 실패해 폴백 모델(Haiku)로 답했습니다.")
 
 
 if __name__ == "__main__":

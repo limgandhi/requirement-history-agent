@@ -24,7 +24,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 
 - Python, LangChain(`langchain-aws`, `langchain-chroma`), LangGraph(에이전트 그래프), `python-dotenv`
 - LLM: Bedrock `global.anthropic.claude-sonnet-4-5-20250929-v1:0`, `us-east-1`, temperature 0
-- 폴백 LLM: Bedrock `global.anthropic.claude-haiku-4-5-20251001-v1:0` (기본 LLM 호출이 실패할 때만 전환, 리전·temperature 동일)
+- 폴백 LLM: Bedrock `global.anthropic.claude-haiku-4-5-20251001-v1:0` (기본 LLM이 2번 시도 후에도 실패할 때만 그 호출을 전환, 리전·temperature 동일, 전환 사실은 로그와 CLI 안내로 알림. `infra/llm/llm.py`의 `get_llm()`)
 - 임베딩: Bedrock `amazon.titan-embed-text-v2:0`, `us-east-1`, 차원 1024로 시작
 - 구조화 데이터: SQLite (`documents`, `chunks`, `requirements`, `requirement_history` 등 목적별 테이블)
 - 의미 검색: Chroma 새 컬렉션 (예: `requirements_history`)

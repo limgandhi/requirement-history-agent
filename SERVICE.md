@@ -73,7 +73,7 @@ Bedrock(Claude, Titan)과 SQLite+Chroma로, Markdown 요구사항 문서에서 �
 - 코드 구조는 `interfaces/`(agent, tools) → `core/`(service, ingest, chunking, extraction, qa, manual) → `infra/`(db, indexing, llm) 3계층이고 `config/`와 진입점 `main.py`는 루트에 둔다. 의존은 한 방향으로만 흐른다
 - SQLite 파일 경로는 `data/requirements.db`, Chroma persist_directory는 `data/chroma_db`, 컬렉션 이름은 `requirements_history`로 확정했다(T6, `config/config.py`)
 - Titan 출력 차원은 기본값 1024로 시작한다
-- 폴백 LLM은 기본 LLM(Sonnet) 호출이 실패(스로틀링, 오류 등)했을 때만 전환하는 것으로 해석한다. 전환 조건과 재시도 횟수는 구현 시 정한다
+- 폴백 LLM은 기본 LLM(Sonnet) 호출이 실패(스로틀링, 오류 등)했을 때만 전환하는 것으로 해석한다. 기본 LLM은 최대 2번(재시도 1회) 시도하고, 그래도 예외가 나면 그 호출만 Haiku로 전환한다(다음 호출은 다시 Sonnet부터). 폴백이 쓰이면 로그를 남기고 CLI가 "폴백 모델(Haiku)로 답했습니다"라고 알린다. 폴백 중에도 정확도 기준은 같다(T14 확정)
 - 새 버전 PRD 문서는 사용자가 `new-version` 명령으로 요청할 때 생성한다(자동 생성 안 함). 저장 위치는 `data/generated/`, 파일 이름은 `<문서명>v<최신 버전+1>.md`(예: `PRDv2.md`)이며 기존 파일은 덮어쓰지 않는다. 직전 문서와 요구사항이 같으면(수동 변경 없음) 만들지 않는다. "수동으로 수정된 부분"에는 수동 추가·수정·삭제를 모두 포함한다고 해석한다(T12a 확정)
 - 새 버전 문서의 형식은 입력 문서와 같은 Markdown 구조(요구사항마다 `###` 헤딩)로 가정한다
 - 청킹은 Markdown 헤딩 단위를 기본으로 하며 `practices/day*_practice/chunking_md.py`를 참고한다
