@@ -1,0 +1,482 @@
+[
+  {
+    "id": "v1-01",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "투표 기간은 최대 며칠인가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "7일"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-003",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-02",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "비밀번호는 어떻게 저장하나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "암호화"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-001",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-03",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "초대받지 않은 사용자도 투표에 참여할 수 있나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "초대"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-002",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-04",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "투표를 반복하도록 설정할 수 있는 주기는 무엇인가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "매주"
+        ],
+        [
+          "매월"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-004",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-05",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "한 사람이 같은 투표에 몇 번 참여할 수 있나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "한 번",
+          "한번",
+          "1번",
+          "1회"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-005",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-06",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "투표 마감 알림은 마감 얼마 전에 보내나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "24시간"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-006",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-07",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "투표 결과는 어떤 형태로 보여 주나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "막대"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-007",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-08",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "지난 투표에서 조회할 수 있는 항목은 무엇인가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "안건"
+        ],
+        [
+          "기간"
+        ],
+        [
+          "결과"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-008",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-09",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "정기 투표 생성 요구사항(REQ-003)은 누가 요청하고 누가 수정했나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "lee"
+        ],
+        [
+          "kim"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-003",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "v1-10",
+    "scenario": "v1",
+    "type": "fact",
+    "question": "관리자가 구성원을 조직에 추가하는 방법은?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "이메일"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-002",
+        "document": "PRD",
+        "version": 1,
+        "requester": "lee",
+        "modifier": "kim"
+      }
+    }
+  },
+  {
+    "id": "hist-01",
+    "scenario": "history",
+    "type": "history",
+    "question": "정기 투표 생성 요구사항(REQ-003)의 투표 기간 제한을 7일에서 14일로 바꾼 것은 누가 요청하고 누가 수정했나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "park"
+        ],
+        [
+          "choi"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-003",
+        "action": "update",
+        "source_type": "auto",
+        "requester": "park",
+        "modifier": "choi",
+        "document": "PRD",
+        "version": 2
+      }
+    }
+  },
+  {
+    "id": "hist-02",
+    "scenario": "history",
+    "type": "history",
+    "question": "투표 마감 알림 요구사항은 누가 삭제했나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "choi"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-006",
+        "action": "delete",
+        "source_type": "auto",
+        "requester": "park",
+        "modifier": "choi",
+        "document": "PRD",
+        "version": 2
+      }
+    }
+  },
+  {
+    "id": "hist-03",
+    "scenario": "history",
+    "type": "history",
+    "question": "익명 투표 옵션 요구사항은 어느 문서 버전에서 추가됐나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "v2",
+          "V2",
+          "PRDv2",
+          "버전 2",
+          "2"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-009",
+        "action": "add",
+        "source_type": "auto",
+        "requester": "park",
+        "modifier": "choi",
+        "document": "PRD",
+        "version": 2
+      }
+    }
+  },
+  {
+    "id": "hist-04",
+    "scenario": "history",
+    "type": "history",
+    "question": "소셜 로그인 요구사항은 누가 요청했나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "park"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-010",
+        "action": "add",
+        "source_type": "auto",
+        "requester": "park",
+        "modifier": "choi",
+        "document": "PRD",
+        "version": 2
+      }
+    }
+  },
+  {
+    "id": "hist-05",
+    "scenario": "history",
+    "type": "history",
+    "question": "반복 주기 설정 요구사항을 수동으로 수정한 사람은 누구인가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "seo"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-004",
+        "action": "update",
+        "source_type": "manual",
+        "requester": "han",
+        "modifier": "seo",
+        "document": "PRD",
+        "version": 1
+      }
+    }
+  },
+  {
+    "id": "hist-06",
+    "scenario": "history",
+    "type": "history",
+    "question": "투표 이력 조회(REQ-008) 요구사항은 누가 삭제했나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "seo"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-008",
+        "action": "delete",
+        "source_type": "manual",
+        "requester": "han",
+        "modifier": "seo",
+        "document": "PRD",
+        "version": 1
+      }
+    }
+  },
+  {
+    "id": "hist-07",
+    "scenario": "history",
+    "type": "history",
+    "question": "수동으로 추가한 REQ-011 요구사항은 무슨 내용인가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "공유"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-011",
+        "action": "add",
+        "source_type": "manual",
+        "requester": "han",
+        "modifier": "seo",
+        "document": "수동 입력",
+        "version": null
+      }
+    }
+  },
+  {
+    "id": "hist-08",
+    "scenario": "history",
+    "type": "history",
+    "question": "지금 정기 투표의 투표 기간은 최대 며칠인가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "14일"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-003",
+        "action": "update",
+        "source_type": "auto",
+        "requester": "park",
+        "modifier": "choi",
+        "document": "PRD",
+        "version": 2
+      }
+    }
+  },
+  {
+    "id": "hist-09",
+    "scenario": "history",
+    "type": "history",
+    "question": "REQ-003의 처음 투표 기간 값은 얼마였나?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "7일"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-003",
+        "action": "add",
+        "source_type": "auto",
+        "requester": "lee",
+        "modifier": "kim",
+        "document": "PRD",
+        "version": 1
+      }
+    }
+  },
+  {
+    "id": "hist-10",
+    "scenario": "history",
+    "type": "history",
+    "question": "투표 마감 알림 요구사항은 아직 유효한가?",
+    "expected": {
+      "found": true,
+      "keywords": [
+        [
+          "삭제"
+        ]
+      ],
+      "source": {
+        "req_key": "REQ-006",
+        "action": "delete",
+        "source_type": "auto",
+        "requester": "park",
+        "modifier": "choi",
+        "document": "PRD",
+        "version": 2
+      }
+    }
+  },
+  {
+    "id": "none-01",
+    "scenario": "v1",
+    "type": "no_answer",
+    "question": "다크 모드 화면 테마를 지원하나?",
+    "expected": {
+      "found": false
+    }
+  },
+  {
+    "id": "none-02",
+    "scenario": "v1",
+    "type": "no_answer",
+    "question": "푸시 알림은 어떤 앱 서버로 보내나?",
+    "expected": {
+      "found": false
+    }
+  }
+]
