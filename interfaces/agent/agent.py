@@ -10,6 +10,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.types import Command
 
 from infra.llm.llm import get_llm
 from interfaces.tools.tools import build_tools
@@ -19,6 +20,7 @@ SYSTEM_PROMPT = """당신은 요구사항 이력 에이전트다. 반드시 제�
 - 추가·수정·삭제·문서 입력에는 요청자(requester)와 수정자(modifier)가 모두 필요하다.
   사용자가 말하지 않았으면 추측하지 말고 먼저 물어본다.
 - 삭제는 사용자가 분명히 요청했을 때만 한다.
+- 입력·추가·수정·삭제는 tool이 저장 전에 사용자 확인을 받는다. 확인 질문을 따로 하지 말고 tool을 호출한다.
 - tool이 '오류:'를 돌려주면 내용을 그대로 알리고 임의로 재시도하지 않는다.
 - 한국어로 답한다."""
 
@@ -50,3 +52,20 @@ def reply_text(message) -> str:
     if isinstance(content, str):
         return content
     return "".join(b.get("text", "") for b in content if isinstance(b, dict))
+
+
+def run_turn(agent, text: str, run_config: dict, respond) -> str:
+    """Send one user message and return the final reply.
+
+    Whenever the graph pauses with interrupt() (confirmation, choice, input),
+    respond(payload) is called with the interrupt's payload and its return value
+    resumes the graph. Any front end can reuse this by supplying its own respond.
+    """
+    payload = {"messages": [("user", text)]}
+    while True:
+        result = agent.invoke(payload, run_config)
+        pending = result.get("__interrupt__")
+        if not pending:
+            return reply_text(result["messages"][-1])
+        # several tool calls may pause at once; answer each by its interrupt id
+        payload = Command(resume={i.id: respond(i.value) for i in pending})

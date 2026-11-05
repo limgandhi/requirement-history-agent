@@ -59,3 +59,26 @@ def test_voting_period_answer_has_sources(env):
     assert src
     assert (src[0].document_name, src[0].version) == ("PRD", 1)
     assert (src[0].requester, src[0].modifier) == ("lee", "kim")
+
+
+def test_manual_change_sources_have_no_none(tmp_path):
+    """Manual history rows have no document_id; sources must still name a document."""
+    from core.manual.manual import add_requirement, update_requirement
+    from core.qa.qa import Answer, _requirement_context, _sources, format_answer
+
+    conn = connect(tmp_path / "m.db")
+    init_schema(conn)
+    ingest_document(conn, SAMPLES / "PRDv1.md", "lee", "kim")
+    update_requirement(conn, "REQ-003", "투표 기간은 최대 10일이다.", "park", "choi")
+    new_key = add_requirement(conn, "새 기능", "새 기능 설명", "park", "choi")
+
+    srcs = _sources(*_requirement_context(conn, "REQ-003")) + _sources(*_requirement_context(conn, new_key))
+    text = format_answer(Answer(text="x", found=True, sources=srcs))
+    conn.close()
+
+    assert "None" not in text
+    edit = [s for s in srcs if s.req_key == "REQ-003" and s.source_type == "manual"][0]
+    assert (edit.document_name, edit.version) == ("PRD", 1)
+    assert (edit.requester, edit.modifier) == ("park", "choi")
+    added = [s for s in srcs if s.req_key == new_key][0]
+    assert (added.document_name, added.version) == ("수동 입력", None)

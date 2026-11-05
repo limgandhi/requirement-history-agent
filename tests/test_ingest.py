@@ -108,7 +108,10 @@ def _tools(tmp_path, name="c.db"):
     return {t.name: t for t in build_tools(tmp_path / name, tmp_path / "chroma")}
 
 
-def test_tool_ingest_then_ask(tmp_path):
+def test_tool_ingest_then_ask(tmp_path, monkeypatch):
+    # Called outside a graph, so answer the confirmation interrupt with "yes" directly;
+    # the interrupt flow itself is covered by test_confirm_interrupt.py.
+    monkeypatch.setattr("interfaces.tools.tools.interrupt", lambda payload: True)
     t = _tools(tmp_path)
     out = t["ingest_document"].invoke(
         {"path": str(SAMPLES / "PRDv1.md"), "requester": "lee", "modifier": "kim"})

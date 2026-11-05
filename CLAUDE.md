@@ -14,6 +14,12 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 
 범위 밖 기능을 요청 없이 추가하지 않는다. 필요해 보이면 구현하지 말고 먼저 물어본다.
 
+## 사용자 확인 (interrupt)
+
+- 사용자에게 확인·선택을 받는 곳은 모두 LangGraph `interrupt()`로 구현한다(문서 입력·추가·수정·삭제의 실행 확인, 출처를 못 찾았을 때의 대안 선택). 프롬프트 지시만으로 확인을 대신하지 않는다.
+- `interrupt()`는 `interfaces/tools/tools.py`에서만 호출하고, 재개는 `interfaces/agent/agent.py`의 `run_turn(agent, text, config, respond)`가 맡는다. 콘솔 입출력(`cli_respond`)만 `main.py`에 둔다.
+- 재개 시 tool이 처음부터 다시 실행되므로 `interrupt()` 앞의 코드는 부작용이 없어야 한다(검증·조회만). 저장은 확인 뒤에 한다.
+
 ## 기술 스택
 
 - Python, LangChain(`langchain-aws`, `langchain-chroma`), LangGraph(에이전트 그래프), `python-dotenv`

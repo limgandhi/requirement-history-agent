@@ -8,7 +8,29 @@ import uuid
 
 from config import config
 from infra.db.db import DEFAULT_DB_PATH
-from interfaces.agent.agent import build_agent, reply_text
+from interfaces.agent.agent import build_agent, run_turn
+
+
+_YES = ("y", "yes", "예", "네", "응", "ㅇ")
+
+
+def cli_respond(payload: dict):
+    """Console side of interrupt(): show the question, return the user's answer."""
+    print(payload["message"])
+    kind = payload["kind"]
+    if kind == "confirm":
+        return input("[y/N] ").strip().lower() in _YES
+    if kind == "choice":
+        options = payload["options"]
+        for n, o in enumerate(options, 1):
+            print(f"  {n}. {o['label']}")
+        while True:
+            picked = input("번호 또는 이름: ").strip()
+            for n, o in enumerate(options, 1):
+                if picked in (str(n), o["id"], o["label"]):
+                    return o["id"]
+            print("목록에 있는 번호를 입력하세요.")
+    return input("> ").strip()
 
 
 def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) -> None:
@@ -22,8 +44,7 @@ def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) 
             break
         if not text or text.lower() in ("exit", "quit"):
             break
-        result = agent.invoke({"messages": [("user", text)]}, run_config)
-        print(reply_text(result["messages"][-1]))
+        print(run_turn(agent, text, run_config, cli_respond))
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ class Source:
     req_key: str
     title: str
     document_name: str
-    version: int
+    version: int | None  # None for requirements added by hand (no source document)
     requester: str
     modifier: str
     action: str
@@ -57,9 +57,16 @@ def _requirement_context(conn: sqlite3.Connection, req_key: str):
     req = conn.execute("SELECT * FROM requirements WHERE req_key = ?", (req_key,)).fetchone()
     if req is None:
         return None
+    # Manual changes carry no document_id of their own: fall back to the document
+    # the requirement came from, and to "수동 입력" when it was added by hand.
     history = conn.execute(
-        "SELECT h.*, d.name AS doc_name, d.version AS doc_version "
-        "FROM requirement_history h LEFT JOIN documents d ON d.id = h.document_id "
+        "SELECT h.*, "
+        "COALESCE(d.name, rd.name, '수동 입력') AS doc_name, "
+        "COALESCE(d.version, rd.version) AS doc_version "
+        "FROM requirement_history h "
+        "JOIN requirements r ON r.id = h.requirement_id "
+        "LEFT JOIN documents d ON d.id = h.document_id "
+        "LEFT JOIN documents rd ON rd.id = r.document_id "
         "WHERE h.requirement_id = ? ORDER BY h.id",
         (req["id"],),
     ).fetchall()
@@ -71,7 +78,7 @@ def _render(req, history) -> str:
     for h in history:
         lines.append(
             f"- 이력[{h['created_at']}] {h['action']}/{h['source_type']} "
-            f"문서 {h['doc_name']} v{h['doc_version']}, 요청자 {h['requester']}, 수정자 {h['modifier']}"
+            f"문서 {h['doc_name']}{'' if h['doc_version'] is None else ' v' + str(h['doc_version'])}, 요청자 {h['requester']}, 수정자 {h['modifier']}"
             f" | 이전: {h['old_value']} | 새 값: {h['new_value']}"
         )
     return "\n".join(lines)
@@ -128,8 +135,9 @@ def format_answer(answer: Answer) -> str:
         lines.append("")
         lines.append("출처:")
         for s in answer.sources:
+            doc = s.document_name if s.version is None else f"{s.document_name}v{s.version}"
             lines.append(
-                f"- {s.req_key} {s.title} | {s.document_name}v{s.version} | "
+                f"- {s.req_key} {s.title} | {doc} | "
                 f"요청자 {s.requester} | 수정자 {s.modifier} | {s.action}/{s.source_type} | {s.created_at}"
             )
     return "\n".join(lines)
