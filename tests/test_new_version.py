@@ -116,3 +116,51 @@ def test_original_sample_file_unchanged_by_generation(tmp_path):
     generate_new_version(conn, tmp_path / "out")
     conn.close()
     assert (SAMPLES / "PRDv1.md").read_bytes() == before
+
+
+# ---- change info (requester / modifier / modified date) written into the document ----
+
+def test_changed_requirements_carry_requester_modifier_and_date(env):
+    from core.chunking.chunking import split_change_info
+
+    conn, _, out = env
+    update_requirement(conn, "REQ-003", "투표 기간은 최대 14일로 제한한다.", "park", "choi")
+    add_requirement(conn, "투표 공유", "관리자는 투표 링크를 공유할 수 있어야 한다.", "han", "seo")
+    delete_requirement(conn, "REQ-006", "park", "choi")
+    r = generate_new_version(conn, out)
+    today = conn.execute("SELECT date('now')").fetchone()[0]
+
+    chunks = {c.heading.split()[0]: c for c in chunk_markdown(r.path.read_text(encoding="utf-8"))
+              if c.heading.startswith("REQ-")}
+    assert chunks["REQ-003"].meta == {"requester": "park", "modifier": "choi", "modified_at": today}
+    assert chunks["REQ-009"].meta == {"requester": "han", "modifier": "seo", "modified_at": today}
+    assert "**요청자:** park" in chunks["REQ-003"].content  # the DB chunk text keeps it too
+    for key in ("REQ-001", "REQ-002", "REQ-004", "REQ-005", "REQ-007", "REQ-008"):
+        assert chunks[key].meta == {}  # untouched: nothing added
+    # extraction returns the plain content and the info separately
+    req = {x.req_key: x for x in extract_requirements(chunk_markdown(r.path.read_text(encoding="utf-8")))}
+    assert req["REQ-003"].content == "투표 기간은 최대 14일로 제한한다."
+    assert req["REQ-003"].change_info["modifier"] == "choi"
+    assert split_change_info(chunks["REQ-001"].content)[1] == {}
+
+
+def test_deleted_requirement_is_listed_with_who_and_when(env):
+    conn, _, out = env
+    delete_requirement(conn, "REQ-006", "park", "choi")
+    text = generate_new_version(conn, out).path.read_text(encoding="utf-8")
+    today = conn.execute("SELECT date('now')").fetchone()[0]
+    assert "## 삭제된 요구사항" in text
+    assert f"- REQ-006 투표 마감 알림 (삭제일 {today}, 요청자 park, 수정자 choi)" in text
+
+
+def test_info_is_not_duplicated_in_later_versions(env):
+    conn, _, out = env
+    update_requirement(conn, "REQ-003", "투표 기간은 최대 14일이다.", "park", "choi")
+    delete_requirement(conn, "REQ-006", "park", "choi")
+    generate_new_version(conn, out)
+    delete_requirement(conn, "REQ-008", "han", "seo")
+    v3 = generate_new_version(conn, out).path.read_text(encoding="utf-8")
+    assert v3.count("**요청자:** park") == 1  # REQ-003 once, not repeated
+    assert v3.count("## 삭제된 요구사항") == 1
+    assert "REQ-006" in v3 and "REQ-008" in v3 and "수정자 seo" in v3
+    assert _reqs(out / "PRDv3.md")["REQ-003"][1] == "투표 기간은 최대 14일이다."

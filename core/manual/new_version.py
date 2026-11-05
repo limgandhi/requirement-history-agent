@@ -6,6 +6,12 @@ Decisions:
   read, never written.
 - Name: '<name>v<latest version + 1>.md' (PRDv1 -> PRDv2). An existing file or
   an existing (name, version) document is never overwritten.
+- Change info: a requirement whose latest history row is a manual change gets
+  three lines after its content (requester, modifier, modified date = the date of
+  that change, UTC). Untouched requirements get none, so they stay identical to
+  the previous version. Manually deleted requirements are listed in the
+  '## 삭제된 요구사항' section with the same info. The info is regenerated from
+  the history on every version; chunking keeps it in chunk.meta and the full text.
 - Content: the latest document's structure (overview, users, non-functional
   sections, ...) is kept. Requirement blocks (### REQ-xxx title) are rebuilt
   from the current requirements: deleted ones are dropped, edited ones carry
@@ -21,11 +27,12 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from core.chunking.chunking import Chunk, chunk_markdown
+from core.chunking.chunking import Chunk, chunk_markdown, format_change_info, split_change_info
 
 DEFAULT_OUTPUT_DIR = Path("data") / "generated"
 
 _REQ_HEADING = re.compile(r"^(REQ-\d+)\s+(.+)$", re.IGNORECASE)
+DELETED_HEADING = "삭제된 요구사항"
 
 
 @dataclass
@@ -44,6 +51,22 @@ def _current_requirements(conn: sqlite3.Connection) -> dict[str, tuple[str, str]
     return {r["req_key"]: (r["title"], r["content"]) for r in rows}
 
 
+def _manual_info(conn: sqlite3.Connection, status: str) -> dict[str, tuple[str, str, str]]:
+    """req_key -> (requester, modifier, date) of the latest history row, if it is manual.
+
+    status 'active' gives the manually added/updated requirements; 'deleted' the
+    manually deleted ones.
+    """
+    rows = conn.execute(
+        "SELECT r.req_key, h.requester, h.modifier, date(h.created_at) AS day "
+        "FROM requirements r JOIN requirement_history h ON h.id = "
+        "(SELECT MAX(id) FROM requirement_history WHERE requirement_id = r.id) "
+        "WHERE r.status = ? AND h.source_type = 'manual' ORDER BY r.id",
+        (status,),
+    ).fetchall()
+    return {r["req_key"]: (r["requester"], r["modifier"], r["day"]) for r in rows}
+
+
 def _baseline_requirements(conn: sqlite3.Connection, document_id: int) -> dict[str, tuple[str, str]]:
     """Requirements as written in a stored document (read from its chunks)."""
     rows = conn.execute(
@@ -54,18 +77,27 @@ def _baseline_requirements(conn: sqlite3.Connection, document_id: int) -> dict[s
     for r in rows:
         m = _REQ_HEADING.match(r["heading"])
         if m:
-            found[m.group(1).upper()] = (m.group(2).strip(), r["content"])
+            found[m.group(1).upper()] = (m.group(2).strip(), split_change_info(r["content"])[0])
     return found
 
 
-def _render(chunks: list[Chunk], current: dict[str, tuple[str, str]], old_version: int, new_version: int) -> str:
+def _render(
+    chunks: list[Chunk],
+    current: dict[str, tuple[str, str]],
+    old_version: int,
+    new_version: int,
+    info: dict[str, tuple[str, str, str]],
+    deleted: list[tuple[str, str, tuple[str, str, str]]],
+) -> str:
     last_req = max(
         (i for i, c in enumerate(chunks) if _REQ_HEADING.match(c.heading)), default=None
     )
     parts: list[str] = []
     written: set[str] = set()
 
-    def block(level: int, heading: str, body: str) -> str:
+    def block(level: int, heading: str, body: str, key: str | None = None) -> str:
+        if key in info:  # manually changed: who asked, who changed, when
+            body = f"{body}\n\n{format_change_info(*info[key])}"
         return f"{'#' * level} {heading}\n\n{body}".rstrip() + "\n"
 
     for i, c in enumerate(chunks):
@@ -74,8 +106,10 @@ def _render(chunks: list[Chunk], current: dict[str, tuple[str, str]], old_versio
             key = m.group(1).upper()
             if key in current:  # deleted requirements are simply left out
                 title, content = current[key]
-                parts.append(block(c.level, f"{key} {title}", content))
+                parts.append(block(c.level, f"{key} {title}", content, key))
                 written.add(key)
+        elif c.heading == DELETED_HEADING:
+            continue  # rebuilt from the history below
         else:
             heading, body = c.heading, c.content
             if c.level == 1:
@@ -90,14 +124,18 @@ def _render(chunks: list[Chunk], current: dict[str, tuple[str, str]], old_versio
             level = c.level
             for key, (title, content) in current.items():
                 if key not in written:
-                    parts.append(block(level, f"{key} {title}", content))
+                    parts.append(block(level, f"{key} {title}", content, key))
                     written.add(key)
 
     if last_req is None:  # no requirement block in the source: append a section
         parts.append("## 요구사항\n")
         for key, (title, content) in current.items():
-            parts.append(block(3, f"{key} {title}", content))
+            parts.append(block(3, f"{key} {title}", content, key))
             written.add(key)
+    if deleted:
+        lines = [f"- {key} {title} (삭제일 {day}, 요청자 {requester}, 수정자 {modifier})"
+                 for key, title, (requester, modifier, day) in deleted]
+        parts.append(block(2, DELETED_HEADING, "\n".join(lines)))
     return "\n".join(parts)
 
 
@@ -147,7 +185,10 @@ def generate_new_version(
         chunks = chunk_markdown(source.read_text(encoding="utf-8"), keep_empty=True)
     else:
         chunks = _fallback_chunks(name, old_version)
-    text = _render(chunks, current, old_version, new_version)
+    titles = {r["req_key"]: r["title"] for r in conn.execute(
+        "SELECT req_key, title FROM requirements WHERE status = 'deleted'")}
+    deleted = [(key, titles[key], who) for key, who in _manual_info(conn, "deleted").items()]
+    text = _render(chunks, current, old_version, new_version, _manual_info(conn, "active"), deleted)
 
     new_chunks = chunk_markdown(text)
     output_dir.mkdir(parents=True, exist_ok=True)

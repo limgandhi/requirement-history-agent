@@ -8,11 +8,11 @@ Rules:
    and they are numbered REQ-001, REQ-002, ... in document order.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
-from core.chunking.chunking import Chunk
+from core.chunking.chunking import Chunk, split_change_info
 
 _REQ_HEADING = re.compile(r"^(REQ-\d+)\s+(.+)$", re.IGNORECASE)
 
@@ -36,6 +36,7 @@ class Requirement:
     title: str
     content: str
     position: int | None = None  # source chunk position; None when LLM-extracted
+    change_info: dict = field(default_factory=dict)  # requester/modifier/modified_at written in the document
 
 
 class _ExtractedItem(BaseModel):
@@ -58,12 +59,14 @@ def _extract_by_id(chunks: list[Chunk]) -> list[Requirement]:
         if key in seen:
             raise ValueError(f"Duplicate requirement ID in document: {key}")
         seen.add(key)
+        body, info = split_change_info(chunk.content)
         found.append(
             Requirement(
                 req_key=key,
                 title=match.group(2).strip(),
-                content=chunk.content,
+                content=body,
                 position=chunk.position,
+                change_info=info,
             )
         )
     return found
