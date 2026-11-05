@@ -343,6 +343,8 @@ erDiagram
 
 ## 7. 웹 API
 
+요청·응답 형식, 오류 코드, 확인 대기(`pending`) 질문의 구조 등 자세한 명세는 [API.md](API.md)를 보세요.
+
 | 메서드·경로 | 설명 |
 |-------------|------|
 | `POST /api/chat` | `{session_id, message}` → `{reply, pending}`. 확인 대기 중이면 409 |
