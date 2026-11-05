@@ -56,18 +56,45 @@ def reply_text(message) -> str:
     return "".join(b.get("text", "") for b in content if isinstance(b, dict))
 
 
+def user_message(text: str) -> dict:
+    return {"messages": [("user", text)]}
+
+
+def step(agent, payload, run_config: dict) -> tuple[str | None, list[dict]]:
+    """Run the graph until it answers or pauses at interrupt().
+
+    Returns (reply, pending). When the graph paused, reply is None and pending lists what
+    the user must answer: {"id", "kind", "message", "options"?}. Answer by calling step()
+    again with Command(resume={id: value, ...}); run_turn() does that for a console.
+    """
+    result = agent.invoke(payload, run_config)
+    pending = result.get("__interrupt__") or []
+    if pending:
+        return None, [{"id": i.id, **i.value} for i in pending]
+    return reply_text(result["messages"][-1]), []
+
+
+def pending_questions(agent, run_config: dict) -> list[dict]:
+    """Questions a conversation is still waiting on (empty when it is not paused)."""
+    state = agent.get_state(run_config)
+    return [{"id": i.id, **i.value} for task in state.tasks for i in task.interrupts]
+
+
+def resume(answers: dict) -> Command:
+    return Command(resume=answers)
+
+
 def run_turn(agent, text: str, run_config: dict, respond) -> str:
-    """Send one user message and return the final reply.
+    """Send one user message and return the final reply (console / blocking front ends).
 
     Whenever the graph pauses with interrupt() (confirmation, choice, input),
     respond(payload) is called with the interrupt's payload and its return value
-    resumes the graph. Any front end can reuse this by supplying its own respond.
+    resumes the graph.
     """
-    payload = {"messages": [("user", text)]}
+    payload = user_message(text)
     while True:
-        result = agent.invoke(payload, run_config)
-        pending = result.get("__interrupt__")
+        reply, pending = step(agent, payload, run_config)
         if not pending:
-            return reply_text(result["messages"][-1])
+            return reply
         # several tool calls may pause at once; answer each by its interrupt id
-        payload = Command(resume={i.id: respond(i.value) for i in pending})
+        payload = resume({q["id"]: respond(q) for q in pending})

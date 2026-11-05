@@ -111,9 +111,10 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
             if not _confirm(f"요구사항을 추가하고 새 버전 문서를 만듭니다.\n제목: {title}\n내용: {content}\n"
                             f"요청자 {requester}, 수정자 {modifier}. 진행할까요?"):
                 return CANCELED
-            key = service.add_requirement_manual(
-                db_path, chroma_dir, title, content, requester, modifier, store=store)
-            return finish(f"추가 완료: {key}")
+            with service.exclusive():  # the new version must hold exactly this change
+                key = service.add_requirement_manual(
+                    db_path, chroma_dir, title, content, requester, modifier, store=store)
+                return finish(f"추가 완료: {key}")
         return guarded(run)
 
     @tool
@@ -125,8 +126,10 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
             if not _confirm(f"{req_key}의 내용을 다음으로 수정하고 새 버전 문서를 만듭니다.\n{content}\n"
                             f"요청자 {requester}, 수정자 {modifier}. 진행할까요?"):
                 return CANCELED
-            service.update_requirement_manual(db_path, chroma_dir, req_key, content, requester, modifier, store=store)
-            return finish(f"수정 완료: {req_key}")
+            with service.exclusive():
+                service.update_requirement_manual(
+                    db_path, chroma_dir, req_key, content, requester, modifier, store=store)
+                return finish(f"수정 완료: {req_key}")
         return guarded(run)
 
     @tool
@@ -138,8 +141,9 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
             if not _confirm(f"{req_key}를 삭제하고 새 버전 문서를 만듭니다 "
                             f"(요청자 {requester}, 수정자 {modifier}). 진행할까요?"):
                 return CANCELED
-            service.delete_requirement_manual(db_path, chroma_dir, req_key, requester, modifier, store=store)
-            return finish(f"삭제 완료: {req_key}")
+            with service.exclusive():
+                service.delete_requirement_manual(db_path, chroma_dir, req_key, requester, modifier, store=store)
+                return finish(f"삭제 완료: {req_key}")
         return guarded(run)
 
     @tool

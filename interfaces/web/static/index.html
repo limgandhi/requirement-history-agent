@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>요구사항 이력 에이전트</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>요구사항 이력 에이전트</h1>
+    <div class="actors">
+      <label>요청자 <input id="requester" placeholder="예: 홍길동" autocomplete="off"></label>
+      <label>수정자 <input id="modifier" placeholder="예: 김철수" autocomplete="off"></label>
+    </div>
+  </header>
+
+  <main>
+    <section class="chat" aria-label="대화">
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <div id="pending" class="pending" hidden></div>
+      <form id="form" class="composer">
+        <textarea id="text" rows="2" placeholder="질문하거나 요청하세요. 예: 투표 기간은 최대 며칠이야?"></textarea>
+        <div class="composer-buttons">
+          <label class="file-button">문서 올리기
+            <input id="file" type="file" accept=".md,text/markdown" hidden>
+          </label>
+          <button id="send" type="submit">보내기</button>
+        </div>
+      </form>
+      <p class="hint">요청자·수정자를 위에 적으면 추가·수정·삭제·문서 입력 요청에 자동으로 함께 전달됩니다.</p>
+    </section>
+
+    <section class="side" aria-label="요구사항과 문서">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-req" aria-selected="true" data-tab="req">요구사항</button>
+        <button role="tab" id="tab-doc" aria-selected="false" data-tab="doc">문서</button>
+        <button id="refresh" type="button" title="새로 불러오기">새로고침</button>
+      </div>
+      <div id="panel-req" class="panel"></div>
+      <div id="panel-doc" class="panel" hidden></div>
+      <div id="history" class="history" hidden></div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

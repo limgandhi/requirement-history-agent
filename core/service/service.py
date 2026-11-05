@@ -29,6 +29,13 @@ def _serialized(fn):
     return wrapper
 
 
+def exclusive():
+    """Hold the write lock across several service calls (e.g. a change and the new version
+    that must contain exactly that change). The lock is reentrant, so the calls inside may
+    take it again."""
+    return _WRITE_LOCK
+
+
 def _undo_ingest(conn, store, document_id: int) -> None:
     """Remove a just-ingested document so SQLite and Chroma stay consistent."""
     with conn:
@@ -164,3 +171,42 @@ def create_new_version(db_path, output_dir=DEFAULT_OUTPUT_DIR) -> NewVersionResu
         return generate_new_version(conn, output_dir)
     finally:
         conn.close()
+
+
+# ---- read-only views (a front end lists these; nothing here writes) ----
+
+def _read(db_path, fn):
+    if not Path(db_path).exists():
+        return []
+    conn = connect(db_path)
+    try:
+        init_schema(conn)
+        return fn(conn)
+    finally:
+        conn.close()
+
+
+def list_requirements(db_path) -> list[dict]:
+    """Every requirement (active first, then deleted) with its current text."""
+    return _read(db_path, lambda conn: [dict(r) for r in conn.execute(
+        "SELECT req_key, title, content, status, updated_at FROM requirements "
+        "ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, id")])
+
+
+def requirement_history(db_path, req_key: str) -> list[dict]:
+    """History of one requirement, oldest first, with who changed it and from which document."""
+    def run(conn):
+        rows = conn.execute(
+            "SELECT h.action, h.source_type, h.old_value, h.new_value, h.requester, h.modifier, h.created_at, "
+            "COALESCE(d.name, rd.name, '수동 입력') AS document, COALESCE(d.version, rd.version) AS version "
+            "FROM requirement_history h JOIN requirements r ON r.id = h.requirement_id "
+            "LEFT JOIN documents d ON d.id = h.document_id LEFT JOIN documents rd ON rd.id = r.document_id "
+            "WHERE r.req_key = ? ORDER BY h.id", ((req_key or "").upper(),)).fetchall()
+        return [dict(r) for r in rows]
+    return _read(db_path, run)
+
+
+def list_documents(db_path) -> list[dict]:
+    """Input documents and the new versions the system generated (newest first)."""
+    return _read(db_path, lambda conn: [dict(r) for r in conn.execute(
+        "SELECT id, name, version, kind, source_path, created_at FROM documents ORDER BY id DESC")])

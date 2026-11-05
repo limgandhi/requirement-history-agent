@@ -1,0 +1,61 @@
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #5d6677; --line: #d9dde5;
+  --accent: #2f5bd8; --accent-text: #ffffff; --danger: #b3261e; --ok: #1b7a43;
+  --user: #e8eefc; --agent: #f0f1f4; --warn-bg: #fff6df; --warn-line: #e6c36a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171d; --panel: #1c2028; --text: #e7eaf0; --muted: #9aa3b5; --line: #30363f;
+    --accent: #7da2ff; --accent-text: #0e1320; --danger: #ff8a80; --ok: #6fd09a;
+    --user: #23304f; --agent: #262b34; --warn-bg: #3a3015; --warn-line: #7a6525;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+h1 { margin: 0; font-size: 18px; }
+.actors { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.actors label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+input, textarea { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; padding: 16px; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+.chat, .side { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+  display: flex; flex-direction: column; min-height: 70vh; }
+.messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px; max-height: 62vh; }
+.msg { padding: 8px 12px; border-radius: 10px; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { background: var(--user); align-self: flex-end; }
+.msg.agent { background: var(--agent); align-self: flex-start; }
+.msg.error { background: transparent; border: 1px solid var(--danger); color: var(--danger); align-self: stretch; }
+.pending { margin-top: 8px; padding: 12px; border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 10px; }
+.pending p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pending .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pending .row input { flex: 1; min-width: 160px; }
+button, .file-button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  border-radius: 8px; padding: 6px 14px; }
+button.primary, #send { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.danger { color: var(--danger); border-color: var(--danger); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.composer { display: flex; gap: 8px; margin-top: 8px; align-items: stretch; }
+.composer textarea { flex: 1; resize: vertical; }
+.composer-buttons { display: flex; flex-direction: column; gap: 6px; }
+.hint { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.tabs #refresh { margin-left: auto; }
+.panel { overflow: auto; max-height: 40vh; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+th { color: var(--muted); font-weight: 600; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover, tr.selected { background: var(--agent); }
+.deleted { color: var(--muted); text-decoration: line-through; }
+.badge { font-size: 12px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.history { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); max-height: 32vh; overflow: auto; }
+.history h2 { font-size: 15px; margin: 0 0 6px; }
+.history li { margin-bottom: 8px; }
+.history ul { padding-left: 18px; margin: 0; }
+.old { color: var(--danger); } .new { color: var(--ok); }
+.empty { color: var(--muted); padding: 8px; }
