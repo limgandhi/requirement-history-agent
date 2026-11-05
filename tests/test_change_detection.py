@@ -185,8 +185,12 @@ def test_version_rules(env):
     ingest_new_version(conn, SAMPLES / "PRDv2.md", "a", "b", store=store)
     v1 = base / "PRDv1.md"
     shutil.copy(SAMPLES / "PRDv1.md", v1)
-    with pytest.raises(ValueError, match="새 버전으로 입력할 수 없습니다"):  # v2 already exists
+    with pytest.raises(ValueError, match="이미 입력된 문서"):  # v1 is stored
         ingest_new_version(conn, v1, "a", "b", store=store)
+    v0 = base / "PRDv0.md"
+    shutil.copy(SAMPLES / "PRDv1.md", v0)
+    with pytest.raises(ValueError, match="새 버전으로 입력할 수 없습니다"):  # lower than the latest (v2)
+        ingest_new_version(conn, v0, "a", "b", store=store)
 
 
 def test_compares_with_the_current_state_including_manual_changes(env):

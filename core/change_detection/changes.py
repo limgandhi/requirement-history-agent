@@ -15,7 +15,7 @@ from pathlib import Path
 from core.change_detection.detection import Detection, Item, detect_changes
 from core.chunking.chunking import Chunk, chunk_markdown
 from core.extraction.extraction import Requirement, extract_requirements
-from core.ingest.ingest import parse_document_name
+from core.ingest.ingest import existing_document_error, parse_document_name
 from infra.db.validation import require_actors
 
 
@@ -91,8 +91,8 @@ def plan_new_version(conn: sqlite3.Connection, path: str | Path, llm=None) -> Pl
         raise ValueError(f"{name} 문서가 아직 없어 새 버전으로 비교할 수 없습니다. 처음 입력으로 처리하세요.")
     if version <= top:
         raise ValueError(
-            f"이미 {name} v{top}까지 있어 v{version}은 새 버전으로 입력할 수 없습니다."
-            if version < top else f"이미 입력된 문서입니다: {name} v{version}"
+            existing_document_error(conn, name, version)
+            or f"이미 {name} v{top}까지 있어 v{version}은 새 버전으로 입력할 수 없습니다."
         )
 
     chunks = chunk_markdown(path.read_text(encoding="utf-8"))

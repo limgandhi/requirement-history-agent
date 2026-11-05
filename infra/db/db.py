@@ -59,7 +59,7 @@ TABLES = ("documents", "chunks", "requirements", "requirement_history")
 def connect(path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, timeout=30)  # wait up to 30 s when another writer holds the lock
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

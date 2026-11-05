@@ -2,6 +2,8 @@
 
 Errors are returned as text (not raised) so the agent can relay them to the user.
 """
+from pathlib import Path
+
 from langchain_core.tools import tool
 from langgraph.errors import GraphInterrupt
 from langgraph.types import interrupt
@@ -19,12 +21,21 @@ def _confirm(message: str) -> bool:
     return interrupt({"kind": "confirm", "message": message}) is True
 
 
-def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OUTPUT_DIR) -> list:
+def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OUTPUT_DIR,
+                allowed_input_dirs=None) -> list:
     def guarded(fn):
         try:
             return fn()
         except (ValueError, OSError) as e:
             return f"오류: {e}"
+
+    def check_input_path(path: str) -> None:
+        """A front end that takes uploads can limit which folders documents are read from."""
+        if allowed_input_dirs is None:
+            return
+        target = Path(path).resolve()
+        if not any(target.is_relative_to(Path(d).resolve()) for d in allowed_input_dirs):
+            raise ValueError("허용된 폴더(업로드한 문서)의 파일만 입력할 수 있습니다.")
 
     def finish(done: str) -> str:
         """After a change is saved, always write the new-version PRD as a new file."""
@@ -40,7 +51,13 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
         requester(요청자)와 modifier(수정자)는 반드시 사용자가 말한 값을 쓴다. 없으면 호출하지 말고 사용자에게 묻는다."""
         def run():
             service.check_actors(requester, modifier)
-            if not _confirm(f"문서 '{path}'를 입력합니다 (요청자 {requester}, 수정자 {modifier}). 진행할까요?"):
+            check_input_path(path)
+            summary = service.preview_ingest(db_path, path, llm=llm)  # read-only; None for a first input
+            if summary:
+                question = f"{summary}\n요청자 {requester}, 수정자 {modifier}로 이 변경을 반영할까요?"
+            else:
+                question = f"문서 '{path}'를 입력합니다 (요청자 {requester}, 수정자 {modifier}). 진행할까요?"
+            if not _confirm(question):
                 return CANCELED
             r = service.ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=llm, store=store)
             return f"입력 완료: {r.summary()}"

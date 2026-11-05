@@ -1,15 +1,32 @@
 """Use cases shared by every front end. The CLI only parses args and prints."""
+import threading
+from functools import wraps
 from pathlib import Path
 
 from infra.db.db import connect, init_schema
 from infra.db.validation import require_actors
 from infra.indexing.indexing import get_vectorstore, index_document
-from core.change_detection.changes import ChangeResult, ingest_new_version, is_new_version
-from core.ingest.ingest import IngestResult, ingest_document
+from core.change_detection.changes import (
+    ChangeResult, format_detection, ingest_new_version, is_new_version, latest_version, plan_new_version)
+from core.ingest.ingest import IngestResult, ingest_document, parse_document_name
 from core.manual.manual import add_requirement, delete_requirement, update_requirement
 from core.manual.new_version import DEFAULT_OUTPUT_DIR, NewVersionResult, generate_new_version
 from core.qa.alternatives import format_candidates, similar_requirements
 from core.qa.qa import Answer, ask
+
+
+# Writes run one at a time inside this process (SQLite and Chroma are changed together, and the
+# next requirement number / change detection must not race). Waiting for the user's answer
+# happens outside the service, so the lock is only held while a write runs.
+_WRITE_LOCK = threading.RLock()
+
+
+def _serialized(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _WRITE_LOCK:
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 def _undo_ingest(conn, store, document_id: int) -> None:
@@ -27,6 +44,7 @@ def _undo_ingest(conn, store, document_id: int) -> None:
         pass
 
 
+@_serialized
 def ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=None, store=None) -> IngestResult | ChangeResult:
     """First input of a document, or -- for a higher version of a known document -- change detection."""
     # Validate first so a bad call does not even create the DB file.
@@ -45,6 +63,25 @@ def ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=None, s
             _undo_ingest(conn, store, result.document_id)
             raise
         return result
+    finally:
+        conn.close()
+
+
+def preview_ingest(db_path, path, llm=None) -> str | None:
+    """What inputting this file would change: a summary for a higher version of a known
+    document, None for a first input. Raises the same errors the input itself would."""
+    if not Path(db_path).exists():
+        return None
+    conn = connect(db_path)
+    try:
+        init_schema(conn)
+        name, _ = parse_document_name(path)
+        if latest_version(conn, name) is None:
+            return None
+        plan = plan_new_version(conn, path, llm=llm)  # rejects versions that are not higher
+        if not plan.detection.has_changes:
+            raise ValueError(f"{plan.name} v{plan.version}에는 바뀐 요구사항이 없어 저장하지 않았습니다.")
+        return format_detection(plan.detection, f"{plan.name}v{plan.version}")
     finally:
         conn.close()
 
@@ -92,6 +129,7 @@ def _manual_change(db_path, chroma_dir, change, store=None):
         conn.close()
 
 
+@_serialized
 def add_requirement_manual(db_path, chroma_dir, title, content, requester, modifier, store=None) -> str:
     require_actors(requester, modifier)  # reject before touching Chroma
     return _manual_change(
@@ -99,6 +137,7 @@ def add_requirement_manual(db_path, chroma_dir, title, content, requester, modif
         lambda conn, s: add_requirement(conn, title, content, requester, modifier, store=s), store)
 
 
+@_serialized
 def update_requirement_manual(db_path, chroma_dir, req_key, content, requester, modifier, store=None) -> None:
     require_actors(requester, modifier)
     _manual_change(
@@ -106,6 +145,7 @@ def update_requirement_manual(db_path, chroma_dir, req_key, content, requester, 
         lambda conn, s: update_requirement(conn, req_key, content, requester, modifier, store=s), store)
 
 
+@_serialized
 def delete_requirement_manual(db_path, chroma_dir, req_key, requester, modifier, store=None) -> None:
     require_actors(requester, modifier)
     _manual_change(
@@ -113,6 +153,7 @@ def delete_requirement_manual(db_path, chroma_dir, req_key, requester, modifier,
         lambda conn, s: delete_requirement(conn, req_key, requester, modifier, store=s), store)
 
 
+@_serialized
 def create_new_version(db_path, output_dir=DEFAULT_OUTPUT_DIR) -> NewVersionResult:
     """Write the manual-change-reflecting PRD as a new file (user-triggered)."""
     if not Path(db_path).exists():

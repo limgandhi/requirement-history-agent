@@ -29,9 +29,11 @@ class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
 
 
-def build_agent(db_path, chroma_dir, llm=None, store=None, output_dir=None, checkpointer=None):
+def build_agent(db_path, chroma_dir, llm=None, store=None, output_dir=None, checkpointer=None,
+                allowed_input_dirs=None):
     """Compile the graph. Call it with config={"configurable": {"thread_id": ...}}."""
     kwargs = {"output_dir": output_dir} if output_dir else {}
+    kwargs["allowed_input_dirs"] = allowed_input_dirs
     tools = build_tools(db_path, chroma_dir, llm=llm, store=store, **kwargs)
     model = (llm or get_llm()).bind_tools(tools)
 

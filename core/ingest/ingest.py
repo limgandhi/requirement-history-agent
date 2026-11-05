@@ -38,11 +38,21 @@ def parse_document_name(path: str | Path) -> tuple[str, int]:
     return stem, 1
 
 
+def existing_document_error(conn: sqlite3.Connection, name: str, version: int) -> str | None:
+    """Message when (name, version) is already stored; None when it is free."""
+    row = conn.execute("SELECT kind FROM documents WHERE name = ? AND version = ?", (name, version)).fetchone()
+    if row is None:
+        return None
+    if row["kind"] == "generated":
+        return (f"{name} v{version}은 시스템이 수동 변경을 반영해 만든 문서라 같은 버전으로 입력할 수 없습니다. "
+                f"파일 이름의 버전을 올려(예: {name}v{version + 1}) 입력하세요.")
+    return f"이미 입력된 문서입니다: {name} v{version}"
+
+
 def _ensure_new(conn: sqlite3.Connection, name: str, version: int, req_keys: list[str]) -> None:
-    if conn.execute(
-        "SELECT 1 FROM documents WHERE name = ? AND version = ?", (name, version)
-    ).fetchone():
-        raise ValueError(f"이미 입력된 문서입니다: {name} v{version}")
+    message = existing_document_error(conn, name, version)
+    if message:
+        raise ValueError(message)
 
     existing = []
     for key in req_keys:
