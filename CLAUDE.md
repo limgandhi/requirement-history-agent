@@ -54,7 +54,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 
 - `rag_chain.py`: Bedrock LLM·임베딩과 Chroma 연결 방식
 - `chunking_md.py`: Markdown 헤딩 단위 청킹
-- `retriever.py`, `hybrid.py`: 검색 방식
+- `retriever.py`, `hybrid.py`: 검색 방식 (하이브리드: 한국어 BM25 0.3 + 벡터 0.7, 요구사항 청크만 대상. `infra/indexing/indexing.py`)
 - `verify_sources.py`: 출처 검증 방식
 
 ## 샘플과 검증
@@ -62,9 +62,9 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 - `samples/PRDv1.md`, `samples/PRDv2.md`: 정기투표앱 가상 PRD (요구사항 8~9개)
   - v1에서 v2로: REQ-003 변경(7일에서 14일), REQ-006 삭제, REQ-009·REQ-010 추가
   - 1차 검증은 `PRDv1.md`를 쓴다. `PRDv2.md`는 2차(변경 감지)에서 쓴다.
-- 요구사항 100개 이상 규모를 검증할 큰 샘플은 아직 없다. 만들 때는 사용자에게 먼저 알린다.
-- 1차 완료 기준은 `SERVICE.md`의 "완료 기준" 7개이며, 각각 `tests/` 아래 pytest로 검증한다. 해당 테스트 파일은 아직 없으니 구현과 함께 만든다.
-- 정확도 기준(질문 10개에 출처까지 모두 정확)은 "샘플 질문 세트 10개 전부 통과"로 시작한다. 질문 세트는 아직 없다.
+- `samples/LargePRDv1.md`: 요구사항 104개 가상 PRD. 규모 검증(`tests/test_scale.py`)에 쓴다. 요구사항이 더 많은 샘플을 새로 만들 때는 사용자에게 먼저 알린다.
+- 1차 완료 기준은 `SERVICE.md`의 "완료 기준" 7개이며, 각각 `tests/` 아래 pytest로 검증한다(검증 명령은 `SERVICE.md` 표). 일부 테스트는 실제 Bedrock을 호출한다.
+- 정확도 기준(질문 10개에 출처까지 모두 정확)은 "샘플 질문 세트 10개 전부 통과"로 확정했다. 질문 세트는 `tests/qa_set.py`다.
 
 ## 작업 방식
 
