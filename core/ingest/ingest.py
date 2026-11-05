@@ -25,6 +25,9 @@ class IngestResult:
     chunk_count: int
     requirement_count: int
 
+    def summary(self) -> str:
+        return f"{self.name}v{self.version} (청크 {self.chunk_count}, 요구사항 {self.requirement_count})"
+
 
 def parse_document_name(path: str | Path) -> tuple[str, int]:
     """'PRDv1.md' -> ('PRD', 1). Without a version suffix: (stem, 1)."""

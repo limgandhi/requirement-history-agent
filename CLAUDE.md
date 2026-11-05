@@ -43,7 +43,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
    - 코드는 3계층으로 나누고 의존은 `interfaces → core → infra` 한 방향으로만 둔다. 설정(`config/`)은 루트에 두고 모든 계층이 읽는다.
      - `interfaces/`: `agent/`, `tools/`. 기능은 `core/service/service.py`를 호출만 한다. `agent`는 LangGraph 그래프(agent 노드 ↔ ToolNode)로 tool을 골라 호출하고 대화 기록은 체크포인터가 관리한다. 여기에는 로직을 넣지 않는다.
      - 루트 `main.py`가 서비스 진입점이다. 인자 없이 `python main.py`로 에이전트 대화만 시작하며 기능별 명령은 없다. 여기에도 로직을 넣지 않는다.
-     - `core/`: `service/`(유스케이스 진입점), `ingest/`, `chunking/`, `extraction/`, `qa/`, `manual/`. UI와 무관한 핵심 로직.
+     - `core/`: `service/`(유스케이스 진입점), `ingest/`, `chunking/`, `extraction/`, `qa/`, `manual/`, `change_detection/`(2차: 새 버전 문서와 현재 요구사항 비교). UI와 무관한 핵심 로직.
      - `infra/`: `db/`(SQLite), `indexing/`(Chroma), `llm/`(Bedrock). 외부 시스템 연결.
 6. **기존 자료는 건드리지 않는다:** `practices/day*_practice/`는 참고용이다. 수정하지 않고, 그 안의 `chroma_db`와 `sds_policies` 컬렉션도 사용하지 않는다.
 7. **새 코드는 루트에 둔다:** `practices/day*_practice/` 안에 새 코드를 만들지 않는다.

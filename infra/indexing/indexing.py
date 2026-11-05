@@ -69,7 +69,9 @@ def index_document(conn: sqlite3.Connection, document_id: int, store: Chroma | N
     return len(ids)
 
 
-def upsert_requirement_vector(store: Chroma, req_key: str, title: str, content: str, requirement_id: int) -> str:
+def upsert_requirement_vector(
+    store: Chroma, req_key: str, title: str, content: str, requirement_id: int, source: dict | None = None
+) -> str:
     """Write the current text of a requirement as vector 'req-<id>'; same id overwrites.
 
     Used for manual changes. Chunk vectors of the original document are left
@@ -79,7 +81,7 @@ def upsert_requirement_vector(store: Chroma, req_key: str, title: str, content: 
     heading = f"{req_key} {title}"
     store.add_texts(
         texts=[f"{heading}\n{content}"],
-        metadatas=[{"req_key": req_key, "heading": heading, "document_name": "manual", "version": 0}],
+        metadatas=[{"req_key": req_key, "heading": heading, "document_name": "manual", "version": 0, **(source or {})}],
         ids=[vector_id],
     )
     return vector_id

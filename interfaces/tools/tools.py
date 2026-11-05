@@ -43,7 +43,7 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
             if not _confirm(f"문서 '{path}'를 입력합니다 (요청자 {requester}, 수정자 {modifier}). 진행할까요?"):
                 return CANCELED
             r = service.ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=llm, store=store)
-            return f"입력 완료: {r.name}v{r.version} (청크 {r.chunk_count}, 요구사항 {r.requirement_count})"
+            return f"입력 완료: {r.summary()}"
         return guarded(run)
 
     # An interrupt re-runs the tool from its start on resume, so the LLM answer of a

@@ -4,6 +4,7 @@ from pathlib import Path
 from infra.db.db import connect, init_schema
 from infra.db.validation import require_actors
 from infra.indexing.indexing import get_vectorstore, index_document
+from core.change_detection.changes import ChangeResult, ingest_new_version, is_new_version
 from core.ingest.ingest import IngestResult, ingest_document
 from core.manual.manual import add_requirement, delete_requirement, update_requirement
 from core.manual.new_version import DEFAULT_OUTPUT_DIR, NewVersionResult, generate_new_version
@@ -26,12 +27,16 @@ def _undo_ingest(conn, store, document_id: int) -> None:
         pass
 
 
-def ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=None, store=None) -> IngestResult:
+def ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=None, store=None) -> IngestResult | ChangeResult:
+    """First input of a document, or -- for a higher version of a known document -- change detection."""
     # Validate first so a bad call does not even create the DB file.
     requester, modifier = require_actors(requester, modifier)
     conn = connect(db_path)
     try:
         init_schema(conn)
+        if is_new_version(conn, path):
+            store = store or get_vectorstore(persist_dir=chroma_dir)
+            return ingest_new_version(conn, path, requester, modifier, llm=llm, store=store)
         result = ingest_document(conn, path, requester, modifier, llm=llm)
         store = store or get_vectorstore(persist_dir=chroma_dir)
         try:
