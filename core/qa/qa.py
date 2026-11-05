@@ -5,6 +5,7 @@ Flow: search chunks (Chroma) -> map hits to requirements and their history
 SQLite rows, never from LLM text, so document/version/requester/modifier can't
 be invented. The LLM only says which requirement keys it relied on.
 """
+import re
 import sqlite3
 from dataclasses import dataclass, field
 
@@ -17,6 +18,9 @@ _PROMPT = """너는 요구사항 이력 질의응답 도우미다. 아래 [근�
 규칙:
 - [근거]에 답이 없으면 answerable을 false로 하고 answer에는 "찾지 못했다"고 써라. 추측하거나 지어내지 마라.
 - 현재 값과 이력이 다르면 질문이 묻는 시점에 맞게 답하되, 이력의 변경 내용을 근거로 해라.
+- 상태가 deleted인 요구사항은 현재 요구사항이 아니다. 현재 값을 묻는 질문에는 그 내용을 현재 규칙처럼 답하지 말고 삭제되었다고 알려라.
+  삭제·변경 이력을 묻는 질문에는 이력을 근거로 답해라.
+- 변경 이력을 답할 때는 이력의 이전 값, 새 값, 문서 버전, 요청자, 수정자, 수동/자동 구분을 그대로 써라.
 - used_req_keys에는 답에 실제로 사용한 요구사항 ID만 넣어라.
 
 [근거]
@@ -51,6 +55,40 @@ class Answer:
     text: str
     found: bool
     sources: list[Source] = field(default_factory=list)
+
+
+_REQ_ID = re.compile(r"REQ-\d+", re.IGNORECASE)
+# Words that show the user is asking about history (so a deleted requirement may be the answer).
+_HISTORY_WORDS = ("삭제", "지웠", "지운", "제거", "폐기", "이력", "변경", "바뀌", "바꿨", "바꾼", "수정", "추가",
+                  "언제", "누가", "누구", "요청자", "수정자", "버전", "유효", "아직", "예전", "처음")
+
+
+_MIN_SHARED_WORDS = 2
+
+
+def _history_keys(conn: sqlite3.Connection, question: str, limit: int = 2) -> list[str]:
+    """Requirements the search index cannot give: the ones the question names by ID, and --
+    for a history question -- deleted ones (their vectors are removed) that match by keywords."""
+    keys: list[str] = []
+    for found in _REQ_ID.findall(question):
+        key = found.upper()
+        if key not in keys and conn.execute("SELECT 1 FROM requirements WHERE req_key = ?", (key,)).fetchone():
+            keys.append(key)
+    if any(word in question for word in _HISTORY_WORDS):
+        from infra.indexing.indexing import korean_tokens
+
+        # Few requirements are deleted, so BM25 (whose weights need many documents) is no use here:
+        # rank by how many of the question's words the title or content shares.
+        question_words = set(korean_tokens(question))
+        rows = conn.execute(
+            "SELECT req_key, title, content FROM requirements WHERE status = 'deleted' ORDER BY id").fetchall()
+        scored = sorted(
+            ((len(question_words & set(korean_tokens(f"{r['title']} {r['content']}"))), r["req_key"]) for r in rows),
+            reverse=True)
+        for shared, key in scored[:limit]:
+            if shared >= _MIN_SHARED_WORDS and key not in keys:
+                keys.append(key)
+    return keys
 
 
 def _requirement_context(conn: sqlite3.Connection, req_key: str):
@@ -99,7 +137,8 @@ def _sources(req, history) -> list[Source]:
 def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 4) -> Answer:
     hits = search_chunks(question, k=k, store=store)
 
-    keys: list[str] = []
+    asked = _history_keys(conn, question)
+    keys: list[str] = list(asked)
     for hit in hits:
         if hit.req_key and hit.req_key not in keys:
             keys.append(hit.req_key)
@@ -107,7 +146,9 @@ def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 
     contexts = {}
     for key in keys:
         ctx = _requirement_context(conn, key)
-        if ctx and ctx[0]["status"] == "active":  # deleted ones are not current requirements
+        # A deleted requirement is shown only when the question points at it (by ID or as a
+        # history question); it is never presented as a current requirement.
+        if ctx and (ctx[0]["status"] == "active" or key in asked):
             contexts[key] = ctx
     if not contexts:
         return Answer(text="관련 요구사항 출처를 찾지 못했다.", found=False)
