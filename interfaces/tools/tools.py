@@ -19,12 +19,40 @@ def _confirm(message: str) -> bool:
     return interrupt({"kind": "confirm", "message": message}) is True
 
 
+SAVE, SAVE_NEW_VERSION, CANCEL = "save", "save_new_version", "cancel"
+SAVE_OPTIONS = [
+    {"id": SAVE, "label": "저장만"},
+    {"id": SAVE_NEW_VERSION, "label": "저장하고 새 버전 문서도 만들기"},
+    {"id": CANCEL, "label": "취소"},
+]
+
+
+def _choose_save(message: str) -> str:
+    """One interrupt before saving: save / save + new version / cancel.
+
+    Asked before the change, never after: a pause after saving would re-run the
+    tool on resume and save twice. Anything unexpected counts as cancel.
+    """
+    choice = interrupt({"kind": "choice", "message": message, "options": SAVE_OPTIONS})
+    return choice if choice in (SAVE, SAVE_NEW_VERSION) else CANCEL
+
+
 def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OUTPUT_DIR) -> list:
     def guarded(fn):
         try:
             return fn()
         except (ValueError, OSError) as e:
             return f"오류: {e}"
+
+    def finish(done: str, choice: str) -> str:
+        """After the change is saved: also write the new-version PRD when the user chose so."""
+        if choice != SAVE_NEW_VERSION:
+            return done
+        try:
+            r = service.create_new_version(db_path, output_dir)
+        except (ValueError, OSError) as e:  # the saved change stays; only the new file failed
+            return f"{done}\n새 버전 문서는 만들지 못했습니다(변경은 저장됨): {e}"
+        return f"{done}\n새 버전 생성: {r.path} ({r.name} v{r.version}, 요구사항 {r.requirement_count}개)"
 
     @tool
     def ingest_document(path: str, requester: str, modifier: str) -> str:
@@ -83,11 +111,13 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
         requester와 modifier는 사용자가 말한 값만 쓰고, 없으면 호출하지 말고 묻는다."""
         def run():
             service.check_actors(requester, modifier)
-            if not _confirm(f"요구사항을 추가합니다.\n제목: {title}\n내용: {content}\n"
-                            f"요청자 {requester}, 수정자 {modifier}. 진행할까요?"):
+            choice = _choose_save(f"요구사항을 추가합니다.\n제목: {title}\n내용: {content}\n"
+                                  f"요청자 {requester}, 수정자 {modifier}.")
+            if choice == CANCEL:
                 return CANCELED
-            return "추가 완료: " + service.add_requirement_manual(
+            key = service.add_requirement_manual(
                 db_path, chroma_dir, title, content, requester, modifier, store=store)
+            return finish(f"추가 완료: {key}", choice)
         return guarded(run)
 
     @tool
@@ -96,11 +126,12 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
         requester와 modifier는 사용자가 말한 값만 쓰고, 없으면 호출하지 말고 묻는다."""
         def run():
             service.check_actors(requester, modifier)
-            if not _confirm(f"{req_key}의 내용을 다음으로 수정합니다.\n{content}\n"
-                            f"요청자 {requester}, 수정자 {modifier}. 진행할까요?"):
+            choice = _choose_save(f"{req_key}의 내용을 다음으로 수정합니다.\n{content}\n"
+                                  f"요청자 {requester}, 수정자 {modifier}.")
+            if choice == CANCEL:
                 return CANCELED
             service.update_requirement_manual(db_path, chroma_dir, req_key, content, requester, modifier, store=store)
-            return f"수정 완료: {req_key}"
+            return finish(f"수정 완료: {req_key}", choice)
         return guarded(run)
 
     @tool
@@ -109,10 +140,11 @@ def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OU
         requester와 modifier는 사용자가 말한 값만 쓰고, 없으면 호출하지 말고 묻는다."""
         def run():
             service.check_actors(requester, modifier)
-            if not _confirm(f"{req_key}를 삭제합니다 (요청자 {requester}, 수정자 {modifier}). 진행할까요?"):
+            choice = _choose_save(f"{req_key}를 삭제합니다 (요청자 {requester}, 수정자 {modifier}).")
+            if choice == CANCEL:
                 return CANCELED
             service.delete_requirement_manual(db_path, chroma_dir, req_key, requester, modifier, store=store)
-            return f"삭제 완료: {req_key}"
+            return finish(f"삭제 완료: {req_key}", choice)
         return guarded(run)
 
     @tool
