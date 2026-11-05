@@ -1,4 +1,4 @@
-"""T21: add/update/delete ask once -- save / save + new version / cancel -- before saving."""
+"""T21: every saved add/update/delete also writes a new-version PRD file (after one y/N confirmation)."""
 from pathlib import Path
 
 import pytest
@@ -19,26 +19,16 @@ def _files(out):
 
 
 @pytest.mark.parametrize("tool,args", CASES)
-def test_choice_offers_three_options(tmp_path, tool, args):
-    _, _, seen = run_agent(tmp_path, ScriptedModel(tool, args), FakeStore(), ["cancel"], tmp_path / "out")
-    assert seen[0]["kind"] == "choice" and len(seen) == 1  # asked once, before saving
-    assert [o["id"] for o in seen[0]["options"]] == ["save", "save_new_version", "cancel"]
+def test_confirmation_is_asked_once_and_mentions_new_version(tmp_path, tool, args):
+    _, _, seen = run_agent(tmp_path, ScriptedModel(tool, args), FakeStore(), [False])
+    assert len(seen) == 1 and seen[0]["kind"] == "confirm" and "새 버전" in seen[0]["message"]
 
 
 @pytest.mark.parametrize("tool,args", CASES)
-def test_save_only_makes_no_file(tmp_path, tool, args):
+def test_saving_always_creates_a_new_version_file(tmp_path, tool, args):
     out = tmp_path / "out"
-    _, tools, _ = run_agent(tmp_path, ScriptedModel(tool, args), FakeStore(), ["save"], out)
-    assert "완료" in tools[0] and "새 버전" not in tools[0]
-    assert _files(out) == []
-    assert status(tmp_path, "REQ-001")[1] == 9  # 8 ingest rows + this change
-
-
-@pytest.mark.parametrize("tool,args", CASES)
-def test_save_and_new_version_creates_file_with_the_change(tmp_path, tool, args):
-    out = tmp_path / "out"
-    _, tools, _ = run_agent(tmp_path, ScriptedModel(tool, args), FakeStore(), ["save_new_version"], out)
-    assert "새 버전 생성" in tools[0] and "PRDv2.md" in tools[0]
+    _, tools, _ = run_agent(tmp_path, ScriptedModel(tool, args), FakeStore(), [True], out)
+    assert "완료" in tools[0] and "새 버전 생성" in tools[0] and "PRDv2.md" in tools[0]
     assert _files(out) == ["PRDv2.md"]
     text = (out / "PRDv2.md").read_text(encoding="utf-8")
     if tool == "update_requirement":
@@ -50,33 +40,38 @@ def test_save_and_new_version_creates_file_with_the_change(tmp_path, tool, args)
     assert (SAMPLES / "PRDv1.md").read_bytes() == ORIGINAL  # original input untouched
 
 
+def test_each_save_makes_its_own_file(tmp_path):
+    """Two saves -> PRDv2.md then PRDv3.md (the DB and generated files are shared by path)."""
+    out = tmp_path / "out"
+    run_agent(tmp_path, ScriptedModel("update_requirement", UPDATE), FakeStore(), [True], out)
+    # second change on the same DB: run_agent rebuilds the DB, so drive the service directly
+    from core.service import service
+    service.delete_requirement_manual(tmp_path / "t.db", tmp_path / "chroma", "REQ-006", "park", "choi", store=FakeStore())
+    r = service.create_new_version(tmp_path / "t.db", out)
+    assert r.version == 3 and _files(out) == ["PRDv2.md", "PRDv3.md"]
+
+
 @pytest.mark.parametrize("tool,args", CASES)
 def test_cancel_changes_nothing_anywhere(tmp_path, tool, args):
     out = tmp_path / "out"
     store = FakeStore()
-    _, tools, _ = run_agent(tmp_path, ScriptedModel(tool, args), store, ["cancel"], out)
+    _, tools, _ = run_agent(tmp_path, ScriptedModel(tool, args), store, [False], out)
     assert "취소" in tools[0]
     assert status(tmp_path, "REQ-001")[1] == 8 and _files(out) == [] and store.added == []
     assert status(tmp_path, "REQ-003")[0]["content"].startswith("관리자는 투표 안건")
 
 
-def test_empty_actors_rejected_before_the_choice(tmp_path):
+def test_empty_actors_rejected_before_the_confirmation(tmp_path):
     bad = dict(UPDATE, requester="")
     _, tools, seen = run_agent(tmp_path, ScriptedModel("update_requirement", bad), FakeStore(), [], tmp_path / "out")
-    assert seen == [] and tools[0].startswith("오류")
-
-
-def test_unexpected_answer_counts_as_cancel(tmp_path):
-    out = tmp_path / "out"
-    _, tools, _ = run_agent(tmp_path, ScriptedModel("delete_requirement", DELETE), FakeStore(), ["???"], out)
-    assert "취소" in tools[0] and status(tmp_path, "REQ-006")[0]["status"] == "active"
+    assert seen == [] and tools[0].startswith("오류") and _files(tmp_path / "out") == []
 
 
 def test_new_version_failure_keeps_the_saved_change(tmp_path):
     out = tmp_path / "out"
     out.mkdir()
     (out / "PRDv2.md").write_text("keep me", encoding="utf-8")  # the file name is taken
-    _, tools, _ = run_agent(tmp_path, ScriptedModel("delete_requirement", DELETE), FakeStore(), ["save_new_version"], out)
+    _, tools, _ = run_agent(tmp_path, ScriptedModel("delete_requirement", DELETE), FakeStore(), [True], out)
     assert "삭제 완료" in tools[0] and "만들지 못했습니다" in tools[0] and "변경은 저장됨" in tools[0]
     assert status(tmp_path, "REQ-006")[0]["status"] == "deleted"
     assert (out / "PRDv2.md").read_text(encoding="utf-8") == "keep me"

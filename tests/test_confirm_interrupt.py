@@ -1,4 +1,4 @@
-"""CRUD actions pause with interrupt() (save / save + new version / cancel) and run only after the user chooses."""
+"""CRUD actions pause with interrupt() and run only after the user confirms."""
 from interrupt_helpers import FakeStore, ScriptedModel, run_agent, status
 
 
@@ -6,8 +6,8 @@ from interrupt_helpers import FakeStore, ScriptedModel, run_agent, status
 
 def test_delete_declined_changes_nothing(tmp_path):
     m = ScriptedModel("delete_requirement", {"req_key": "REQ-006", "requester": "a", "modifier": "b"})
-    _, tools, seen = run_agent(tmp_path, m, FakeStore(), ["cancel"])
-    assert seen[0]["kind"] == "choice" and "REQ-006" in seen[0]["message"]
+    _, tools, seen = run_agent(tmp_path, m, FakeStore(), [False])
+    assert seen[0]["kind"] == "confirm" and "REQ-006" in seen[0]["message"]
     assert "취소" in tools[0]
     row, count = status(tmp_path, "REQ-006")
     assert row["status"] == "active" and count == 8  # no history row added
@@ -15,7 +15,7 @@ def test_delete_declined_changes_nothing(tmp_path):
 
 def test_delete_confirmed_deletes(tmp_path):
     m = ScriptedModel("delete_requirement", {"req_key": "REQ-006", "requester": "a", "modifier": "b"})
-    _, tools, _ = run_agent(tmp_path, m, FakeStore(), ["save"])
+    _, tools, _ = run_agent(tmp_path, m, FakeStore(), [True])
     assert "삭제 완료" in tools[0]
     assert status(tmp_path, "REQ-006")[0]["status"] == "deleted"
 
@@ -23,8 +23,8 @@ def test_delete_confirmed_deletes(tmp_path):
 def test_update_and_add_need_confirmation(tmp_path):
     up = ScriptedModel("update_requirement",
                        {"req_key": "REQ-003", "content": "최대 10일", "requester": "a", "modifier": "b"})
-    _, tools, seen = run_agent(tmp_path, up, FakeStore(), ["cancel"])
-    assert seen[0]["kind"] == "choice" and "취소" in tools[0]
+    _, tools, seen = run_agent(tmp_path, up, FakeStore(), [False])
+    assert seen[0]["kind"] == "confirm" and "취소" in tools[0]
     assert "7일" in status(tmp_path, "REQ-003")[0]["content"]
 
 
@@ -33,8 +33,8 @@ def test_add_declined_saves_nothing(tmp_path):
     add = ScriptedModel("add_requirement",
                         {"title": "새", "content": "내용", "requester": "a", "modifier": "b"})
     store = FakeStore()
-    _, tools, seen = run_agent(tmp_path, add, store, ["cancel"])
-    assert seen[0]["kind"] == "choice" and "취소" in tools[0] and store.added == []
+    _, tools, seen = run_agent(tmp_path, add, store, [False])
+    assert seen[0]["kind"] == "confirm" and "취소" in tools[0] and store.added == []
     assert status(tmp_path, "REQ-009")[0] is None
 
 

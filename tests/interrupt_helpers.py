@@ -73,7 +73,7 @@ def make_db(tmp_path):
 def run_agent(tmp_path, model, store, answers, output_dir=None):
     """Run one turn; `answers` are the resume values for each interrupt in order."""
     make_db(tmp_path)
-    agent = build_agent(tmp_path / "t.db", tmp_path / "chroma", llm=model, store=store, output_dir=output_dir)
+    agent = build_agent(tmp_path / "t.db", tmp_path / "chroma", llm=model, store=store, output_dir=output_dir or tmp_path / "out")
     seen = []
     queue = iter(answers)
 
