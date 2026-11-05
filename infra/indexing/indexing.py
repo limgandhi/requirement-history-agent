@@ -25,7 +25,7 @@ class SearchHit:
     heading: str
     req_key: str | None
     content: str
-    score: float  # cosine distance: lower is more similar
+    score: float  # merged rank score of the hybrid search: higher is better
 
 
 def get_vectorstore(persist_dir: str = config.CHROMA_DIR, embeddings=None) -> Chroma:
@@ -92,21 +92,83 @@ def drop_old_vectors(store: Chroma, req_key: str, keep_id: str | None = None) ->
         store.delete(ids=ids)
 
 
-def search_chunks(query: str, k: int = 4, store: Chroma | None = None) -> list[SearchHit]:
+# ---- hybrid search (T16; method from practices/day2_practice/hybrid.py) ----
+# BM25 over Korean morphemes (keywords) + vector search (meaning), merged by weighted
+# reciprocal rank fusion, the same scheme as LangChain's EnsembleRetriever.
+BM25_WEIGHT = 0.3
+VECTOR_WEIGHT = 0.7
+_RRF_C = 60
+_FETCH = 20  # candidates taken from each ranking before merging
+_KEEP_TAGS = {"NNG", "NNP", "NNB", "NR", "NP", "VV", "VA", "SL", "SN"}
+_kiwi = None
+
+
+def korean_tokens(text: str) -> list[str]:
+    """Nouns, stems, numbers and foreign words only (same filter as day2 hybrid.py)."""
+    global _kiwi
+    if _kiwi is None:
+        from kiwipiepy import Kiwi  # heavy import, loaded on first search
+
+        _kiwi = Kiwi()
+    return [t.form for t in _kiwi.tokenize(text) if t.tag in _KEEP_TAGS]
+
+
+def _to_hit(content: str, m: dict, score: float) -> SearchHit:
+    return SearchHit(
+        chunk_id=m.get("chunk_id"),
+        document_id=m.get("document_id"),
+        document_name=m.get("document_name", "manual"),
+        version=m.get("version", 0),
+        heading=m["heading"],
+        req_key=m.get("req_key"),
+        content=content,
+        score=score,
+    )
+
+
+def _vector_ranking(store: Chroma, query: str) -> list[tuple[str, SearchHit]]:
+    out = []
+    for doc, distance in store.similarity_search_with_score(query, k=_FETCH):
+        if doc.metadata.get("req_key"):  # only requirement chunks can be sources
+            out.append((doc.page_content, _to_hit(doc.page_content, doc.metadata, distance)))
+    return out
+
+
+def _bm25_ranking(store: Chroma, query: str) -> list[tuple[str, SearchHit]]:
+    """BM25 over the requirement texts currently stored in Chroma (so manual edits count)."""
+    from rank_bm25 import BM25Okapi
+
+    data = store.get(include=["documents", "metadatas"])
+    items = [(d, m) for d, m in zip(data.get("documents") or [], data.get("metadatas") or [])
+             if m and m.get("req_key")]
+    query_tokens = korean_tokens(query)
+    if not items or not query_tokens:
+        return []
+    bm25 = BM25Okapi([korean_tokens(d) or ["_"] for d, _ in items])
+    scores = bm25.get_scores(query_tokens)
+    ranked = sorted(zip(scores, items), key=lambda x: x[0], reverse=True)[:_FETCH]
+    return [(d, _to_hit(d, m, float(sc))) for sc, (d, m) in ranked if sc > 0]
+
+
+def search_chunks(query: str, k: int = 4, store: Chroma | None = None, hybrid: bool = True) -> list[SearchHit]:
+    """Top-k requirement chunks. hybrid=False uses the vector ranking only.
+
+    Only chunks of requirements (those with a req_key) are returned: general sections
+    such as the overview can never be a source, so they must not take a slot.
+    score is the merged rank score (higher is better).
+    """
     store = store or get_vectorstore()
-    hits = []
-    for doc, score in store.similarity_search_with_score(query, k=k):
-        m = doc.metadata
-        hits.append(
-            SearchHit(
-                chunk_id=m.get("chunk_id"),
-                document_id=m.get("document_id"),
-                document_name=m.get("document_name", "manual"),
-                version=m.get("version", 0),
-                heading=m["heading"],
-                req_key=m.get("req_key"),
-                content=doc.page_content,
-                score=score,
-            )
-        )
-    return hits
+    rankings = [(VECTOR_WEIGHT if hybrid else 1.0, _vector_ranking(store, query))]
+    if hybrid:
+        rankings.append((BM25_WEIGHT, _bm25_ranking(store, query)))
+
+    merged: dict[str, list] = {}  # key -> [score, hit]
+    for weight, ranking in rankings:
+        for rank, (content, hit) in enumerate(ranking, 1):
+            key = f"{hit.req_key}|{hit.chunk_id}|{content}"
+            entry = merged.setdefault(key, [0.0, hit])
+            entry[0] += weight / (_RRF_C + rank)
+    best = sorted(merged.values(), key=lambda e: e[0], reverse=True)[:k]
+    for score, hit in best:
+        hit.score = score
+    return [hit for _, hit in best]
