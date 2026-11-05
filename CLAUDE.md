@@ -41,8 +41,8 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 4. **정확성이 속도보다 우선이다:** 응답 속도는 요구사항이 아니다. 정확한 출처와 답변을 우선한다.
 5. **핵심 로직은 UI와 분리한다:** 대화 진입점(`main.py`)과 에이전트·tool은 얇게 두고, 이후 웹 UI가 같은 로직을 재사용할 수 있어야 한다.
    - 코드는 3계층으로 나누고 의존은 `interfaces → core → infra` 한 방향으로만 둔다. 설정(`config/`)은 루트에 두고 모든 계층이 읽는다.
-     - `interfaces/`: `agent/`, `tools/`, `web/`(FastAPI 서버와 정적 화면). 기능은 `core/service/service.py`를 호출만 한다. `agent`는 LangGraph 그래프(agent 노드 ↔ ToolNode)로 tool을 골라 호출하고 대화 기록은 체크포인터가 관리한다. 여기에는 로직을 넣지 않는다.
-     - 웹 서버는 `python -m uvicorn --factory interfaces.web.app:create_app --host 0.0.0.0 --port 8000`으로 띄운다. 여기에도 로직을 넣지 않고 `core/service`와 에이전트(`step`, `resume`)만 호출한다.
+     - `interfaces/`: `agent/`, `tools/`. 기능은 `core/service/service.py`를 호출만 한다. `agent`는 LangGraph 그래프(agent 노드 ↔ ToolNode)로 tool을 골라 호출하고 대화 기록은 체크포인터가 관리한다. 여기에는 로직을 넣지 않는다.
+     - 루트 `web/`(FastAPI 서버와 정적 화면)도 `main.py`처럼 서비스 진입점이다. 웹 서버는 `python -m uvicorn --factory web.app:create_app --host 0.0.0.0 --port 8000`으로 띄운다. 여기에도 로직을 넣지 않고 `core/service`와 에이전트(`step`, `resume`)만 호출한다.
      - 루트 `main.py`가 서비스 진입점이다. 인자 없이 `python main.py`로 에이전트 대화만 시작하며 기능별 명령은 없다. 여기에도 로직을 넣지 않는다.
      - `core/`: `service/`(유스케이스 진입점), `ingest/`, `chunking/`, `extraction/`, `qa/`, `manual/`, `change_detection/`(2차: 새 버전 문서와 현재 요구사항 비교). UI와 무관한 핵심 로직.
      - `infra/`: `db/`(SQLite), `indexing/`(Chroma), `llm/`(Bedrock). 외부 시스템 연결.

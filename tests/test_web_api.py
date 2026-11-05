@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from langgraph.checkpoint.memory import InMemorySaver
 
 from interfaces.agent.agent import build_agent
-from interfaces.web.app import create_app
+from web.app import create_app
 from interrupt_helpers import FakeStore, ScriptedModel, make_db
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"

@@ -1,7 +1,7 @@
 """Web front end (FastAPI). Thin: it passes messages to the agent graph and lists data.
 
 Run (local, for people on the same network):
-    python -m uvicorn --factory interfaces.web.app:create_app --host 0.0.0.0 --port 8000
+    python -m uvicorn --factory web.app:create_app --host 0.0.0.0 --port 8000
 
 No login: requester / modifier are typed on the page and sent with the message. The agent
 asks for confirmation through interrupt(); the page shows those questions as buttons and
