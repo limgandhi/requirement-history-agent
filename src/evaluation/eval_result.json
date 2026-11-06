@@ -8,15 +8,16 @@
     "detail": "답변·출처 일치",
     "status": "ok",
     "answer": "투표 기간은 최대 7일입니다.",
-    "fallback": false,
+    "fallback": true,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"최대 7일\"이라는 내용이 근거의 \"투표 기간은 최대 7일로 제한한다\"와 정확히 일치하며, 질문이 묻는 투표 기간의 최대 일수에 대해 명확히 답변하고 있습니다."
+      "reason": "답변의 \"최대 7일\"이라는 내용이 [근거]의 \"투표 기간은 최대 7일로 제한한다\"와 정확히 일치하며, 질문이 묻는 투표 기간의 최대 일수를 직접적으로 답하고 있습니다."
     },
     "ragas": {
-      "faithfulness": 1.0,
+      "faithfulness": null,
+      "error": "faithfulness: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again.",
       "answer_relevancy": 0.39
     }
   },
@@ -34,7 +35,7 @@
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"비밀번호는 암호화해서 저장합니다\"는 [근거]의 REQ-001 현재 내용에 명시된 \"비밀번호는 암호화해서 저장한다\"와 정확히 일치하며, 질문이 묻는 비밀번호 저장 방식에 대해 직접적으로 답하고 있습니다."
+      "reason": "답변의 \"비밀번호는 암호화해서 저장합니다\"는 [근거]의 REQ-001 현재 내용에 명시된 \"비밀번호는 암호화해서 저장한다\"와 정확히 일치하며, [질문]이 묻는 비밀번호 저장 방법에 대해 직접적으로 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
@@ -55,7 +56,7 @@
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변은 REQ-002의 현재 내용에 명시된 \"초대받은 사용자만 해당 조직의 투표에 참여할 수 있다\"는 내용을 정확히 인용하여, 초대받지 않은 사용자는 투표에 참여할 수 없다고 올바르게 답변하고 있습니다. 모든 내용이 근거로 뒷받침되며 질문에 직접적으로 답하고 있습니다."
+      "reason": "답변이 [근거]의 REQ-002 요구사항 내용과 정확히 일치하며, [질문]에서 묻는 \"초대받지 않은 사용자의 투표 참여 가능 여부\"에 명확하게 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
@@ -76,7 +77,7 @@
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"매주 또는 매월\"이라는 내용은 근거의 REQ-004에 명시된 \"매주 또는 매월 반복하도록 설정할 수 있어야 한다\"와 정확히 일치하며, 질문이 묻는 반복 주기에 대해 직접적으로 답변하고 있습니다."
+      "reason": "답변의 \"매주 또는 매월\"이라는 내용이 근거(REQ-004)의 \"매주 또는 매월 반복하도록 설정할 수 있어야 한다\"와 정확히 일치하며, 질문이 묻는 반복 주기에 대해 명확히 답변하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
@@ -97,7 +98,7 @@
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"한 사람은 한 투표에 한 번만 참여할 수 있습니다\"는 [근거]의 REQ-005 현재 내용에 명시된 \"한 사람은 한 투표에 한 번만 참여할 수 있다\"와 정확히 일치하며, 질문이 묻는 참여 횟수(한 번)를 명확히 답하고 있습니다."
+      "reason": "답변이 [근거]의 REQ-005 현재 내용에서 \"한 사람은 한 투표에 한 번만 참여할 수 있다\"는 내용과 정확히 일치하며, [질문]에서 묻는 \"한 사람이 같은 투표에 몇 번 참여할 수 있나\"에 직접 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
@@ -112,17 +113,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "투표 마감 24시간 전에 보냅니다.",
+    "answer": "투표 마감 알림은 마감 24시간 전에 보냅니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"24시간 전\"이라는 내용이 근거의 \"투표 마감 24시간 전에 아직 참여하지 않은 투표자에게 이메일 알림을 보낸다\"와 정확히 일치하며, 질문이 묻는 마감 전 알림 시점을 명확히 답하고 있습니다."
+      "reason": "답변의 \"마감 24시간 전\"이라는 내용이 근거의 \"투표 마감 24시간 전에 아직 참여하지 않은 투표자에게 이메일 알림을 보낸다\"와 정확히 일치하며, 질문이 묻는 알림 발송 시점을 명확히 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.324
+      "answer_relevancy": 0.738
     }
   },
   {
@@ -133,17 +134,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "투표 결과는 선택지별 득표 수와 비율을 표와 막대 그래프로 보여 줍니다. (투표가 마감되면 확인할 수 있습니다)",
+    "answer": "투표 결과는 선택지별 득표 수와 비율을 표와 막대 그래프로 보여 줍니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 모든 내용(표와 막대 그래프, 선택지별 득표 수와 비율)이 [근거]의 현재 내용과 정확히 일치하며, 투표 마감 후 확인 가능하다는 조건도 포함하여 질문에 완전히 답하고 있습니다."
+      "reason": "답변의 모든 내용(선택지별 득표 수, 비율, 표, 막대 그래프)이 [근거]의 REQ-007 현재 내용과 정확히 일치하며, [질문]이 묻는 투표 결과의 표시 형태를 명확히 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.545
+      "answer_relevancy": 0.509
     }
   },
   {
@@ -160,11 +161,11 @@
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"안건, 기간, 결과\"는 [근거]의 REQ-008 현재 내용에서 명시한 조회 가능 항목과 정확히 일치하며, 질문이 묻는 조회 가능 항목을 완전히 답하고 있습니다."
+      "reason": "답변에서 언급한 \"안건, 기간, 결과\"는 모두 근거(REQ-008)의 현재 내용에 명시된 조회 가능 항목과 정확히 일치하며, 질문이 묻는 조회 항목을 빠짐없이 답변하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.589
+      "answer_relevancy": 0.569
     }
   },
   {
@@ -175,17 +176,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "REQ-003 정기 투표 생성 요구사항은 lee가 요청하고 kim이 수정했습니다.",
+    "answer": "정기 투표 생성 요구사항(REQ-003)은 lee가 요청하고 kim이 수정했습니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "근거의 이력 정보에 \"요청자 lee, 수정자 kim\"이 명시되어 있으며, 답변은 이를 정확히 반영하여 질문이 묻는 요청자와 수정자를 모두 제시하고 있습니다."
+      "reason": "근거의 이력 정보에 \"요청자 lee, 수정자 kim\"이 명시되어 있으며, 답변은 이를 정확히 반영하여 질문이 묻는 요청자와 수정자를 모두 제시했습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.659
+      "answer_relevancy": 0.682
     }
   },
   {
@@ -202,7 +203,7 @@
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"이메일로 구성원을 초대하여 조직에 추가\"라는 내용은 근거의 \"관리자는 조직을 만들고 이메일로 구성원을 초대할 수 있어야 한다\"와 정확히 일치하며, 질문이 묻는 \"구성원을 조직에 추가하는 방법\"에 대해 명확히 답하고 있습니다."
+      "reason": "답변의 \"이메일로 구성원을 초대하여 조직에 추가\"라는 내용이 근거의 \"관리자는 조직을 만들고 이메일로 구성원을 초대할 수 있어야 한다\"와 일치하며, 질문이 묻는 \"관리자가 구성원을 조직에 추가하는 방법\"을 정확히 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
@@ -217,18 +218,18 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "REQ-003의 투표 기간 제한을 7일에서 14일로 바꾼 것은 park이 요청하고 choi가 수정했습니다. 이 변경은 2026-11-05 08:54:40에 문서 PRD v2에서 update/auto로 이루어졌습니다.",
-    "fallback": false,
+    "answer": "REQ-003 정기 투표 생성 요구사항의 투표 기간 제한을 7일에서 14일로 변경한 것은 2026-11-06 01:55:21에 진행되었습니다. 요청자는 park이고 수정자는 choi입니다.",
+    "fallback": true,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 모든 내용(요청자 park, 수정자 choi, 변경 전 7일, 변경 후 14일, 날짜 2026-11-05 08:54:40, 문서 PRD v2, update/auto)이 근거의 두 번째 이력 항목과 정확히 일치하며, 질문이 묻는 '누가 요청하고 누가 수정했나'에 명확히 답하고 있습니다."
+      "reason": "답변의 모든 내용(요청자 park, 수정자 choi, 7일에서 14일로의 변경)이 [근거]의 두 번째 이력 항목과 정확히 일치하며, 질문이 묻는 요청자와 수정자를 모두 명확히 답하고 있습니다."
     },
     "ragas": {
-      "faithfulness": 1.0,
-      "answer_relevancy": null,
-      "error": "answer_relevancy: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again."
+      "faithfulness": null,
+      "error": "faithfulness: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again.",
+      "answer_relevancy": null
     }
   },
   {
@@ -239,18 +240,18 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "투표 마감 알림 요구사항(REQ-006)은 2026-11-05 08:54:40에 수정자 choi가 삭제했습니다.",
+    "answer": "투표 마감 알림 요구사항(REQ-006)은 2026-11-06 01:55:21에 수정자 choi가 삭제했습니다.",
     "fallback": true,
     "llm_judge": {
       "ok": false,
       "supported": true,
       "answers_question": false,
-      "reason": "답변이 삭제 작업을 수행한 사람을 \"수정자 choi\"로만 언급했으나, 질문은 \"누가 삭제했나\"를 묻고 있으므로 요청자 정보도 함께 제시해야 합니다. 근거에 따르면 요청자는 park이고 수정자는 choi인데, 삭제를 요청한 주체(park)를 빠뜨렸습니다."
+      "reason": "답변이 삭제 작업을 수행한 사람을 잘못 파악했습니다. 근거에 따르면 삭제 요청자는 park이고 수정자는 choi인데, 질문은 \"누가 삭제했나\"를 묻고 있으므로 요청자 park이 정답입니다."
     },
     "ragas": {
-      "faithfulness": 1.0,
-      "answer_relevancy": null,
-      "error": "answer_relevancy: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again."
+      "faithfulness": null,
+      "error": "faithfulness: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again.",
+      "answer_relevancy": null
     }
   },
   {
@@ -261,17 +262,18 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "익명 투표 옵션 요구사항(REQ-009)은 문서 PRD v2에서 추가됐습니다.",
+    "answer": "익명 투표 옵션 요구사항(REQ-009)은 문서 PRD v2에서 추가되었습니다.",
     "fallback": true,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 모든 내용(REQ-009, 익명 투표 옵션, PRD v2에서 추가)이 근거의 이력 정보와 정확히 일치하며, 질문이 묻는 '어느 문서 버전에서 추가됐나'에 대해 명확히 답변하고 있습니다."
+      "reason": "답변의 모든 내용(문서 버전 \"PRD v2\", 요구사항 \"REQ-009\")이 [근거]의 이력 정보와 정확히 일치하며, 질문이 묻는 \"어느 문서 버전에서 추가됐나\"에 대해 직접적으로 답하고 있습니다."
     },
     "ragas": {
-      "faithfulness": 1.0,
-      "answer_relevancy": 0.489
+      "faithfulness": null,
+      "error": "faithfulness: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again.",
+      "answer_relevancy": null
     }
   },
   {
@@ -282,8 +284,8 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "소셜 로그인 요구사항(REQ-010)은 park이 요청했습니다.",
-    "fallback": false,
+    "answer": "소셜 로그인 요구사항(REQ-010)은 park님이 요청했습니다.",
+    "fallback": true,
     "llm_judge": {
       "ok": true,
       "supported": true,
@@ -292,7 +294,8 @@
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.554
+      "answer_relevancy": null,
+      "error": "answer_relevancy: ThrottlingException: An error occurred (ThrottlingException) when calling the Converse operation (reached max retries: 4): Too many tokens per day, please wait before trying again."
     }
   },
   {
@@ -303,17 +306,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "반복 주기 설정 요구사항(REQ-004)을 수동으로 수정한 사람은 수정자 seo입니다. \n\n변경 이력:\n- 문서 버전: PRD v1\n- 요청자: han\n- 수정자: seo\n- 구분: manual\n- 이전 값: 관리자는 투표를 매주 또는 매월 반복하도록 설정할 수 있어야 한다. 반복 주기가 되면 같은 설정으로 새 투표가 자동 생성된다.\n- 새 값: 관리자는 투표를 매주, 매월 또는 매분기 반복하도록 설정할 수 있어야 한다.",
-    "fallback": false,
+    "answer": "반복 주기 설정 요구사항(REQ-004)을 수동으로 수정한 사람은 seo입니다. 2026-11-06 01:55:22에 update/manual로 수정되었으며, 수정자는 seo입니다.",
+    "fallback": true,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변이 [근거]의 두 번째 이력 항목(update/manual)에서 수정자로 명시된 \"seo\"를 정확히 지적했으며, 제시된 모든 세부 정보(문서 버전, 요청자, 수정자, 구분, 이전/새 값)가 [근거]와 일치합니다. 질문이 묻는 \"수동으로 수정한 사람\"에 대해 명확히 답하고 있습니다."
+      "reason": "근거의 두 번째 이력 항목에서 \"update/manual 문서 PRD v1, 요청자 han, 수정자 seo\"로 명시되어 있으며, 답변이 수정자 seo를 정확히 지적하고 수정 시간과 방식(update/manual)도 모두 근거와 일치합니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.546
+      "answer_relevancy": 0.55
     }
   },
   {
@@ -324,17 +327,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "REQ-008 투표 이력 조회 요구사항은 수정자 seo가 삭제했습니다. (2026-11-05 08:54:42, delete/manual, 문서 PRD v1, 요청자 han)",
+    "answer": "REQ-008 투표 이력 조회 요구사항은 삭제되었습니다. 삭제 이력은 다음과 같습니다:\n- 문서 버전: PRD v1\n- 요청자: han\n- 수정자: seo\n- 구분: manual (수동)\n- 이전 값: 사용자는 지난 투표의 안건, 기간, 결과를 목록에서 조회할 수 있어야 한다.\n- 새 값: None",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변이 [근거]의 삭제 이력 정보와 완벽하게 일치합니다. 수정자 seo가 2026-11-05 08:54:42에 delete/manual 방식으로 삭제했다는 내용이 모두 [근거]에 명시되어 있으며, 질문의 \"누가 삭제했나\"에 정확히 답하고 있습니다."
+      "reason": "답변은 질문이 묻는 \"누가 삭제했나\"에 대해 요청자 han과 수정자 seo를 명시했으며, 문서 버전(PRD v1), 구분(manual), 이전 값, 새 값 등 모든 내용이 근거의 삭제 이력과 정확히 일치합니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.619
+      "answer_relevancy": 0.572
     }
   },
   {
@@ -345,7 +348,7 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "REQ-011은 \"관리자는 투표 링크를 공유할 수 있어야 한다.\"는 내용입니다. 이 요구사항은 2026-11-05 08:54:42에 문서 수동 입력으로 수동(manual) 추가되었으며, 요청자는 han, 수정자는 seo입니다.",
+    "answer": "REQ-011 요구사항은 \"관리자는 투표 링크를 공유할 수 있어야 한다.\"는 내용입니다. 이 요구사항은 2026-11-06 01:55:22에 문서 수동 입력으로 수동(manual) 추가되었으며, 요청자는 han, 수정자는 seo입니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
@@ -355,7 +358,7 @@
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.698
+      "answer_relevancy": 0.733
     }
   },
   {
@@ -366,17 +369,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "지금 정기 투표의 투표 기간은 최대 14일입니다.",
+    "answer": "현재 정기 투표의 투표 기간은 최대 14일로 제한됩니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"최대 14일\"이라는 내용은 [근거]의 \"현재 내용: ... 투표 기간은 최대 14일로 제한한다\"와 정확히 일치하며, 질문이 묻는 \"지금\" 정기 투표의 최대 투표 기간에 대해 명확히 답하고 있습니다."
+      "reason": "답변의 \"최대 14일\"이라는 내용은 [근거]의 REQ-003 현재 내용에 명시된 \"투표 기간은 최대 14일로 제한한다\"와 정확히 일치하며, 질문이 묻는 현재 투표 기간의 최대값을 정확히 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.373
+      "answer_relevancy": 0.371
     }
   },
   {
@@ -387,17 +390,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "REQ-003의 처음 투표 기간 값은 최대 7일이었습니다.\n\n[근거]\n- 이력[2026-11-05 08:54:36] add/auto 문서 PRD v1, 요청자 lee, 수정자 kim\n- 이전: None\n- 새 값: 관리자는 투표 안건, 선택지, 투표 기간을 입력해 투표를 만들 수 있어야 한다. 투표 기간은 최대 7일로 제한한다.",
+    "answer": "REQ-003의 처음 투표 기간 값은 최대 7일이었습니다. 2026-11-06 01:55:16에 add/auto로 추가된 이력에서 새 값이 \"관리자는 투표 안건, 선택지, 투표 기간을 입력해 투표를 만들 수 있어야 한다. 투표 기간은 최대 7일로 제한한다.\"였으며, 이후 2026-11-06 01:55:21에 update/auto로 최대 14일로 변경되었습니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변의 \"최대 7일\"이라는 값이 근거의 첫 번째 이력(2026-11-05 08:54:36)에서 새 값으로 명시되어 있으며, 이것이 처음 생성된 요구사항의 초기값입니다. 질문이 묻는 처음 투표 기간 값을 정확히 답하고 있습니다."
+      "reason": "답변이 [근거]의 이력 정보와 정확히 일치합니다. 처음 투표 기간 값이 최대 7일이었다는 것과 이후 14일로 변경된 경과를 모두 올바르게 제시했으며, 타임스탬프와 변경 내용도 [근거]와 완벽하게 부합합니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.994
+      "answer_relevancy": 0.697
     }
   },
   {
@@ -408,17 +411,17 @@
     "passed": true,
     "detail": "답변·출처 일치",
     "status": "ok",
-    "answer": "아니요, 투표 마감 알림 요구사항(REQ-006)은 현재 유효하지 않습니다. 이 요구사항은 삭제되었습니다.\n\n삭제 이력:\n- 이력[2026-11-05 08:54:40] delete/auto 문서 PRD v2, 요청자 park, 수정자 choi | 이전: 투표 마감 24시간 전에 아직 참여하지 않은 투표자에게 이메일 알림을 보낸다. | 새 값: None",
+    "answer": "REQ-006 투표 마감 알림 요구사항은 현재 유효하지 않습니다. 해당 요구사항은 삭제되었습니다. 2026-11-06 01:55:21에 문서 PRD v2에서 delete/auto로 삭제되었으며, 요청자는 park, 수정자는 choi입니다.",
     "fallback": false,
     "llm_judge": {
       "ok": true,
       "supported": true,
       "answers_question": true,
-      "reason": "답변은 REQ-006이 삭제되어 유효하지 않다는 질문에 정확히 답하고 있으며, 제시된 모든 내용(요구사항 번호, 상태, 삭제 이력의 날짜, 요청자, 수정자, 변경 내용)이 [근거]에 완전히 일치합니다."
+      "reason": "답변은 REQ-006의 상태가 deleted임을 정확히 전달하고, 삭제 시점(2026-11-06 01:55:21), 문서(PRD v2), 작업 유형(delete/auto), 요청자(park), 수정자(choi) 모두 근거와 일치합니다. 질문이 묻는 유효성 여부에 명확히 답하고 있습니다."
     },
     "ragas": {
       "faithfulness": 1.0,
-      "answer_relevancy": 0.438
+      "answer_relevancy": 0.383
     }
   },
   {
@@ -429,7 +432,7 @@
     "passed": true,
     "detail": "찾지 못했다고 답함",
     "status": "ok",
-    "answer": "찾지 못했다",
+    "answer": "찾지 못했습니다.",
     "fallback": false,
     "llm_judge": null,
     "ragas": null
@@ -442,7 +445,7 @@
     "passed": true,
     "detail": "찾지 못했다고 답함",
     "status": "ok",
-    "answer": "찾지 못했다",
+    "answer": "찾지 못했습니다.",
     "fallback": false,
     "llm_judge": null,
     "ragas": null
