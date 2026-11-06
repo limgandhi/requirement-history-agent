@@ -29,7 +29,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 - 구조화 데이터: SQLite (`documents`, `chunks`, `requirements`, `requirement_history` 등 목적별 테이블)
 - 의미 검색: Chroma 새 컬렉션 (예: `requirements_history`)
 - 테스트: pytest
-- 가상환경은 루트의 `.venv`를 쓴다. 의존성은 `requirements.txt`에 있으며, 새 패키지를 추가할 때는 먼저 확인한다.
+- 가상환경은 루트의 `.venv`를 쓴다. 의존성은 `requirements.txt`에 있으며, 새 패키지를 추가할 때는 먼저 확인한다. (평가용 `ragas`는 확인을 받고 추가했다.)
 
 ## LLM 호출 로그
 
@@ -72,6 +72,14 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 - `samples/LargePRDv1.md`: 요구사항 104개 가상 PRD. 규모 검증(`tests/test_scale.py`)에 쓴다. 요구사항이 더 많은 샘플을 새로 만들 때는 사용자에게 먼저 알린다.
 - 1차 완료 기준은 `SERVICE.md`의 "완료 기준" 7개이며, 각각 `tests/` 아래 pytest로 검증한다(검증 명령은 `SERVICE.md` 표). 일부 테스트는 실제 Bedrock을 호출한다.
 - 정확도 기준(질문 10개에 출처까지 모두 정확)은 "샘플 질문 세트 10개 전부 통과"로 확정했다. 질문 세트는 `tests/qa_set.py`다.
+
+## 정답셋 평가와 LLM 심사
+
+- `python evals/run_eval.py`가 `evals/eval_set.json`을 실제 Bedrock으로 돌려 기대값(키워드, 출처)과 대조한다. 출처는 코드로 정확히 비교하며 LLM에 맡기지 않는다.
+- `--judge`를 붙이면 `evals/judge.py`의 LLM 심사자가 답변 문장이 근거에 충실한지(`supported`), 질문에 답했는지(`answers_question`)를 추가로 본다. 참고용이라 PASS/FAIL·종료 코드에 영향을 주지 않으며, 기본은 꺼짐이다(문항당 Bedrock 호출 1회 증가). 심사 결과로 통과 기준을 바꾸지 않는다.
+- `--ragas`를 붙이면 `evals/ragas_metrics.py`가 RAGAS `faithfulness`·`answer_relevancy`(0~1)를 산출한다. 역시 참고용이며 기본은 꺼짐이다(문항당 Bedrock 호출 여러 번). ragas를 쓰는 코드는 `RAGAS_DO_NOT_TRACK`을 설정하고 vertexai 가짜 모듈을 등록하는 이 파일을 거쳐야 한다(직접 `import ragas` 금지: 사용 통계 외부 전송, import 오류). Context Precision/Recall은 아직 없다(2단계).
+- 평가 도구는 `evals/`에 두고 서비스 코드(`core/`, `interfaces/`)가 `evals/`를 가져다 쓰지 않는다. `evals/judge.py`는 `core.qa.qa`를 읽기만 한다.
+- `run_eval.py`는 `evals/eval_result.json`을 덮어쓰므로 일부 문항만 돌린 뒤에는 커밋하지 않는다.
 
 ## 작업 방식
 

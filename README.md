@@ -401,6 +401,8 @@ Bedrock을 실제로 호출하는 테스트는 비용과 외부 전송이 생기
 ```powershell
 python evals/run_eval.py                  # 22문항 전체 (실제 Bedrock 호출)
 python evals/run_eval.py --only hist      # id가 hist로 시작하는 문항만 (기록은 남기지 않음)
+python evals/run_eval.py --judge          # + LLM 심사자가 답변 문장을 평가 (문항당 Bedrock 호출 1회 추가)
+python evals/run_eval.py --ragas          # + RAGAS faithfulness·answer_relevancy 점수 (문항당 Bedrock 호출 여러 번)
 ```
 
 | 파일 | 내용 |
@@ -411,6 +413,8 @@ python evals/run_eval.py --only hist      # id가 hist로 시작하는 문항만
 
 - `source`에 적은 항목(`req_key`, `action`, `source_type`, `requester`, `modifier`, `document`, `version`)을 모두 만족하는 출처가 하나 있어야 통과합니다.
 - 임시 DB·Chroma를 쓰므로 `data/`는 건드리지 않습니다. 틀린 문항이 있으면 종료 코드 1을 돌려줍니다.
+- `--judge`(LLM-as-judge, `evals/judge.py`): 답을 찾은 답변마다 근거(출처가 가리키는 요구사항과 이력)를 보여 주고 `supported`(내용이 모두 근거로 뒷받침됨)와 `answers_question`(질문에 답함)을 판정합니다. 출처는 코드가 정확히 대조하므로 심사하지 않고, 결과는 참고용이라 통과 여부·종료 코드에 영향이 없습니다. "확인 필요"로 표시된 문항은 사람이 읽어 보세요. 결과는 `eval_result.json`의 `llm_judge`와 `eval_history.jsonl`의 `judge`·`judge_flagged`에 남습니다.
+- `--ragas`(`evals/ragas_metrics.py`): 답을 찾은 답변마다 `faithfulness`(답변이 근거로 뒷받침되는 비율)와 `answer_relevancy`(질문과의 관련도)를 0~1로 산출하고 요약에 평균과 0.7 미만 문항을 보여 줍니다. 근거는 `--judge`와 같이 출처가 가리키는 요구사항과 이력입니다. 참고용이라 통과 여부·종료 코드에 영향이 없고, `answer_relevancy`는 짧고 정확한 답에도 낮게 나올 수 있어 추세와 이상치를 보는 용도입니다. Context Precision/Recall은 기준 답변이 없어 아직 없습니다. 패키지 `ragas`가 필요합니다(`pip install -r requirements.txt`).
 - Sonnet 호출이 실패해 Haiku로 답한 문항은 `(폴백)`으로 표시되고 요약에 건수가 나옵니다.
 
 ---

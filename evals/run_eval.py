@@ -3,6 +3,8 @@
     python evals/run_eval.py                 # 전체
     python evals/run_eval.py --only hist     # id가 hist로 시작하는 문항만
     python evals/run_eval.py --no-history    # eval_history.jsonl에 기록하지 않음
+    python evals/run_eval.py --judge         # 답변 문장을 LLM 심사자도 평가(참고용, 통과 여부에는 영향 없음)
+    python evals/run_eval.py --ragas         # RAGAS faithfulness·answer_relevancy 점수 산출(참고용)
 
 eval_set.json의 각 문항을 실제 Bedrock으로 질의응답(core.qa.ask)해 기대값과 비교하고
 eval_result.json(문항별 결과)과 eval_history.jsonl(실행 한 줄 요약, 추세 확인용)에 남긴다.
@@ -33,6 +35,7 @@ from core.change_detection.changes import ingest_new_version  # noqa: E402
 from core.ingest.ingest import ingest_document  # noqa: E402
 from core.manual.manual import add_requirement, delete_requirement, update_requirement  # noqa: E402
 from core.qa.qa import ask  # noqa: E402
+from evals.judge import evidence_for, evidence_list, judge_answer  # noqa: E402
 from infra.db.db import connect, init_schema  # noqa: E402
 from infra.indexing.indexing import get_vectorstore, index_document  # noqa: E402
 from infra.llm.llm import fallback_count  # noqa: E402
@@ -97,8 +100,27 @@ def judge(case: dict, answer) -> tuple[bool, str]:
     return True, "답변·출처 일치"
 
 
-def run(cases: list[dict]) -> list[dict]:
+def llm_judge(llm, conn, question: str, answer) -> dict:
+    """Advisory LLM verdict on the answer text (see evals/judge.py). Never raises."""
+    try:
+        v = judge_answer(llm, question, answer.text, evidence_for(conn, answer))
+        return {"ok": v.ok, "supported": v.supported, "answers_question": v.answers_question, "reason": v.reason}
+    except Exception as e:
+        return {"ok": None, "reason": f"[심사 오류] {type(e).__name__}: {e}"}
+
+
+def run(cases: list[dict], use_judge: bool = False, use_ragas: bool = False) -> list[dict]:
     results = []
+    judge_model = None
+    if use_judge:
+        from infra.llm.llm import get_llm
+
+        judge_model = get_llm()
+    scorer = None
+    if use_ragas:
+        from evals.ragas_metrics import RagasScorer  # imported only when asked: ragas is slow to import
+
+        scorer = RagasScorer()
     with tempfile.TemporaryDirectory(prefix="req_eval_", ignore_cleanup_errors=True) as tmp:  # Windows keeps Chroma files open
         base = Path(tmp)
         env = {}  # scenario name -> (conn, store), built on first use
@@ -106,7 +128,7 @@ def run(cases: list[dict]) -> list[dict]:
             for case in cases:
                 out = {"id": case["id"], "scenario": case["scenario"], "type": case["type"],
                        "question": case["question"], "passed": False, "detail": "", "status": "ok", "answer": "",
-                       "fallback": False}
+                       "fallback": False, "llm_judge": None, "ragas": None}
                 try:
                     if case["scenario"] not in SCENARIOS:
                         out.update(status="unsupported", detail=f"[미지원 scenario: {case['scenario']}]")
@@ -121,11 +143,22 @@ def run(cases: list[dict]) -> list[dict]:
                         out["fallback"] = fallback_count() > before  # Haiku answered instead of Sonnet
                         out["answer"] = answer.text
                         out["passed"], out["detail"] = judge(case, answer)
+                        if judge_model is not None and answer.found:
+                            out["llm_judge"] = llm_judge(judge_model, conn, case["question"], answer)
+                        if scorer is not None and answer.found:
+                            out["ragas"] = scorer.score(case["question"], answer.text, evidence_list(conn, answer))
                 except Exception as e:  # one broken case must not stop the run
                     out.update(status="error", detail=f"[실행 오류] {type(e).__name__}: {e}")
                 results.append(out)
                 print(f"  [{'PASS' if out['passed'] else 'FAIL'}]{'(폴백)' if out['fallback'] else ''} {out['id']} {out['question']}"
                       + ("" if out["passed"] else f"\n         -> {out['detail']}"), flush=True)
+                jd = out["llm_judge"]
+                if jd and jd["ok"] is not True:
+                    print(f"         [심사 {'확인 필요' if jd['ok'] is False else '오류'}] {jd['reason']}", flush=True)
+                rg = out["ragas"]
+                if rg:
+                    print(f"         [ragas] faithfulness={rg['faithfulness']} answer_relevancy={rg['answer_relevancy']}"
+                          + (f" ({rg['error']})" if rg.get("error") else ""), flush=True)
         finally:
             for conn, _ in env.values():
                 conn.close()
@@ -151,14 +184,19 @@ def last_run() -> dict | None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", help="id가 이 값으로 시작하는 문항만 실행")
+    ap.add_argument("--judge", action="store_true",
+                    help="답변 문장을 LLM 심사자도 평가(Bedrock 호출이 문항당 1회 늘어남, 통과 여부에는 영향 없음)")
+    ap.add_argument("--ragas", action="store_true",
+                    help="RAGAS faithfulness·answer_relevancy 점수 산출(답을 찾은 문항마다 Bedrock 호출 여러 번, 통과 여부에는 영향 없음)")
     ap.add_argument("--no-history", action="store_true", help="eval_history.jsonl에 기록하지 않음")
     args = ap.parse_args()
 
     cases = json.loads(EVAL_SET.read_text(encoding="utf-8"))
     if args.only:
         cases = [c for c in cases if c["id"].startswith(args.only)]
-    print(f"평가 {len(cases)}문항 (실제 Bedrock 호출)\n")
-    results = run(cases)
+    extras = "".join([", LLM 심사 포함" if args.judge else "", ", RAGAS 포함" if args.ragas else ""])
+    print(f"평가 {len(cases)}문항 (실제 Bedrock 호출{extras})\n")
+    results = run(cases, use_judge=args.judge, use_ragas=args.ragas)
 
     scored = [r for r in results if r["status"] == "ok"]
     skipped = [r for r in results if r["status"] != "ok"]
@@ -181,6 +219,23 @@ def main() -> int:
         for r in skipped:
             print(f"  {r['id']} ({r['status']}) {r['detail']}")
 
+    judged = [r for r in scored if r["llm_judge"] and r["llm_judge"]["ok"] is not None]
+    judge_flagged = sorted(r["id"] for r in judged if not r["llm_judge"]["ok"])
+    if args.judge:
+        errors = sum(1 for r in scored if r["llm_judge"] and r["llm_judge"]["ok"] is None)
+        print(f"\n===== LLM 심사(참고용): {len(judged) - len(judge_flagged)}/{len(judged)} 문항 이상 없음 =====")
+        print(f"  확인 필요: {judge_flagged or '없음'}" + (f"  (심사 오류 {errors}건)" if errors else ""))
+
+    ragas_means: dict[str, float | None] = {}
+    if args.ragas:
+        print("\n===== RAGAS 평균(참고용, 0~1) =====")
+        for name in ("faithfulness", "answer_relevancy"):
+            vals = [r["ragas"][name] for r in scored if r["ragas"] and r["ragas"][name] is not None]
+            ragas_means[name] = round(sum(vals) / len(vals), 3) if vals else None
+            low = sorted(r["id"] for r in scored
+                         if r["ragas"] and r["ragas"][name] is not None and r["ragas"][name] < 0.7)
+            print(f"  {name}: {ragas_means[name]} ({len(vals)}문항)" + (f", 0.7 미만: {low}" if low else ""))
+
     # Compare with the previous run (only when the same ids were run, so --only is not a regression).
     failed_ids = sorted(r["id"] for r in scored if not r["passed"])
     prev = last_run()
@@ -197,6 +252,11 @@ def main() -> int:
         row = {"time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "commit": git_commit(),
                "passed": passed, "scored": len(scored), "skipped": len(skipped), "fallback": fell_back,
                "by_type": {t: f"{p}/{n}" for t, (p, n) in by_type.items()}, "failed": failed_ids}
+        if args.judge:
+            row["judge"] = f"{len(judged) - len(judge_flagged)}/{len(judged)}"
+            row["judge_flagged"] = judge_flagged
+        if args.ragas:
+            row["ragas"] = ragas_means
         with EVAL_HISTORY.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         print(f"실행 요약 추가: {EVAL_HISTORY.relative_to(ROOT)}")

@@ -32,3 +32,6 @@ fastapi
 uvicorn
 python-multipart
 httpx
+
+# 평가 (evals/run_eval.py --ragas). 설치된 langchain-community와 맞지 않는 import는 evals/ragas_metrics.py가 보정
+ragas
