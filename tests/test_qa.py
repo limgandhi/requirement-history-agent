@@ -37,7 +37,7 @@ class _FakeLLM:
 
 def test_llm_says_unanswerable_means_not_found(env):
     conn, store = env
-    llm = _FakeLLM(_LLMAnswer(answerable=False, answer="찾지 못했다", used_req_keys=[]))
+    llm = _FakeLLM(_LLMAnswer(answerable=False, answer="찾지 못했습니다.", used_req_keys=[]))
     ans = ask(conn, "투표 기간", store=store, llm=llm)
     assert llm.calls == 1
     assert not ans.found and ans.sources == []

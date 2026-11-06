@@ -10,14 +10,14 @@ def test_not_found_offers_choices_and_similar_candidates(tmp_path):
     _, tools, seen = run_agent(tmp_path, m, FakeStore(), ["similar"])
     assert seen[0]["kind"] == "choice"
     assert [o["id"] for o in seen[0]["options"]] == ["similar", "rephrase", "cancel"]
-    assert "찾지 못했다" in tools[0] and "REQ-003" in tools[0]
+    assert "찾지 못했습니다" in tools[0] and "REQ-003" in tools[0]
     assert m.qa_calls == 0  # nothing retrieved -> no LLM call, nothing invented
 
 
 def test_not_found_cancel(tmp_path):
     m = ScriptedModel("ask_history", {"question": "없는 기능"})
     _, tools, _ = run_agent(tmp_path, m, FakeStore(), ["cancel"])
-    assert "찾지 못했다" in tools[0] and "REQ-" not in tools[0]
+    assert "찾지 못했습니다" in tools[0] and "REQ-" not in tools[0]
 
 
 def test_not_found_rephrase_then_answered_with_sources(tmp_path):

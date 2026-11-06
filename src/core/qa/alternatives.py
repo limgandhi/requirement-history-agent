@@ -14,7 +14,7 @@ from src.infrastructure.indexing.indexing import search_chunks
 OPTIONS = [
     {"id": "similar", "label": "비슷한 요구사항 후보 보기"},
     {"id": "rephrase", "label": "질문을 바꿔 다시 검색"},
-    {"id": "cancel", "label": "그만두기"},
+    {"id": "cancel", "label": "무시하고 질의하기"},
 ]
 
 MAX_ROUNDS = 3  # questions asked in total (first one + rephrases) before giving up

@@ -28,6 +28,11 @@ main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); grid
 .msg { padding: 8px 12px; border-radius: 10px; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg.user { background: var(--user); align-self: flex-end; }
 .msg.agent { background: var(--agent); align-self: flex-start; }
+.msg.loading { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.spinner { width: 20px; height: 20px; border: 3px solid var(--muted); border-top-color: var(--accent); border-right-color: var(--accent); border-radius: 50%;
+  animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.6s; } }
 .msg.error { background: transparent; border: 1px solid var(--danger); color: var(--danger); align-self: stretch; }
 .pending { margin-top: 8px; padding: 12px; border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 10px; }
 .pending p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }

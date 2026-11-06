@@ -16,11 +16,12 @@ from src.infrastructure.indexing.indexing import search_chunks
 _PROMPT = """너는 요구사항 이력 질의응답 도우미다. 아래 [근거]에 있는 내용만으로 질문에 답해라.
 
 규칙:
-- [근거]에 답이 없으면 answerable을 false로 하고 answer에는 "찾지 못했다"고 써라. 추측하거나 지어내지 마라.
+- [근거]에 답이 없으면 answerable을 false로 하고 answer에는 "찾지 못했습니다."라고 써라. 추측하거나 지어내지 마라.
 - 현재 값과 이력이 다르면 질문이 묻는 시점에 맞게 답하되, 이력의 변경 내용을 근거로 해라.
 - 상태가 deleted인 요구사항은 현재 요구사항이 아니다. 현재 값을 묻는 질문에는 그 내용을 현재 규칙처럼 답하지 말고 삭제되었다고 알려라.
   삭제·변경 이력을 묻는 질문에는 이력을 근거로 답해라.
 - 변경 이력을 답할 때는 이력의 이전 값, 새 값, 문서 버전, 요청자, 수정자, 수동/자동 구분을 그대로 써라.
+- answer는 정중한 존댓말(~습니다, ~입니다)로 써라. 이력의 값 원문은 바꾸지 말고 그대로 인용해라.
 - used_req_keys에는 답에 실제로 사용한 요구사항 ID만 넣어라.
 
 [근거]
@@ -151,7 +152,7 @@ def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 
         if ctx and (ctx[0]["status"] == "active" or key in asked):
             contexts[key] = ctx
     if not contexts:
-        return Answer(text="관련 요구사항 출처를 찾지 못했다.", found=False)
+        return Answer(text="관련 요구사항 출처를 찾지 못했습니다.", found=False)
 
     if llm is None:
         from src.infrastructure.llm.llm import get_llm
@@ -164,7 +165,7 @@ def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 
 
     used = [k.upper() for k in result.used_req_keys if k.upper() in contexts]
     if not result.answerable or not used:
-        return Answer(text=result.answer or "찾지 못했다.", found=False)
+        return Answer(text=result.answer or "찾지 못했습니다.", found=False)
     sources = [s for key in used for s in _sources(*contexts[key])]
     return Answer(text=result.answer, found=True, sources=sources)
 

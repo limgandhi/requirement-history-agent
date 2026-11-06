@@ -1,0 +1,158 @@
+"""LangChain tools over app.service. Every tool is a thin wrapper: no business logic.
+
+Errors are returned as text (not raised) so the agent can relay them to the user.
+"""
+from pathlib import Path
+
+from langchain_core.tools import tool
+from langgraph.errors import GraphInterrupt
+from langgraph.types import interrupt
+
+from src.core.service import service
+from src.core.manual.new_version import DEFAULT_OUTPUT_DIR
+from src.core.qa.alternatives import MAX_ROUNDS, OPTIONS
+from src.core.qa.qa import format_answer
+
+CANCELED = "취소했습니다. 아무것도 저장하지 않았습니다."
+
+
+def _confirm(message: str) -> bool:
+    """Pause the graph until the user answers yes/no (resume value is a bool)."""
+    return interrupt({"kind": "confirm", "message": message}) is True
+
+
+def build_tools(db_path, chroma_dir, llm=None, store=None, output_dir=DEFAULT_OUTPUT_DIR,
+                allowed_input_dirs=None) -> list:
+    def guarded(fn):
+        try:
+            return fn()
+        except (ValueError, OSError) as e:
+            return f"오류: {e}"
+
+    def check_input_path(path: str) -> None:
+        """A front end that takes uploads can limit which folders documents are read from."""
+        if allowed_input_dirs is None:
+            return
+        target = Path(path).resolve()
+        if not any(target.is_relative_to(Path(d).resolve()) for d in allowed_input_dirs):
+            raise ValueError("허용된 폴더(업로드한 문서)의 파일만 입력할 수 있습니다.")
+
+    def finish(done: str) -> str:
+        """After a change is saved, always write the new-version PRD as a new file."""
+        try:
+            r = service.create_new_version(db_path, output_dir)
+        except (ValueError, OSError) as e:  # the saved change stays; only the new file failed
+            return f"{done}\n새 버전 문서는 만들지 못했습니다(변경은 저장됨): {e}"
+        return f"{done}\n새 버전 생성: {r.path} ({r.name} v{r.version}, 요구사항 {r.requirement_count}개)"
+
+    @tool
+    def ingest_document(path: str, requester: str, modifier: str) -> str:
+        """Markdown(.md) 요구사항 문서를 입력해 요구사항을 추출·저장한다.
+        requester(요청자)와 modifier(수정자)는 반드시 사용자가 말한 값을 쓴다. 없으면 호출하지 말고 사용자에게 묻는다."""
+        def run():
+            service.check_actors(requester, modifier)
+            check_input_path(path)
+            summary = service.preview_ingest(db_path, path, llm=llm)  # read-only; None for a first input
+            if summary:
+                question = f"{summary}\n요청자 {requester}, 수정자 {modifier}로 이 변경을 반영할까요?"
+            else:
+                question = f"문서 '{path}'를 입력합니다 (요청자 {requester}, 수정자 {modifier}). 진행할까요?"
+            if not _confirm(question):
+                return CANCELED
+            r = service.ingest_and_index(db_path, chroma_dir, path, requester, modifier, llm=llm, store=store)
+            return f"입력 완료: {r.summary()}"
+        return guarded(run)
+
+    # An interrupt re-runs the tool from its start on resume, so the LLM answer of a
+    # question is kept here until the tool finishes (no second Bedrock call).
+    answers: dict = {}
+
+    def ask_once(question: str):
+        if question not in answers:
+            answers[question] = service.ask_question(db_path, chroma_dir, question, llm=llm, store=store)
+        return answers[question]
+
+    def ask_with_alternatives(question: str) -> str:
+        for round_no in range(MAX_ROUNDS):
+            answer = ask_once(question)
+            if answer.found:
+                return format_answer(answer)
+            choice = interrupt({
+                "kind": "choice",
+                "message": f"{answer.text}\n대안을 선택하세요.",
+                "options": OPTIONS,
+            })
+            if choice == "similar":
+                return answer.text + "\n" + service.find_similar_requirements(
+                    db_path, chroma_dir, question, store=store)
+            if choice != "rephrase":
+                return answer.text + "\n대안을 선택하지 않아 여기서 마칩니다."
+            question = interrupt({"kind": "input", "message": "새 질문을 입력하세요."})
+        return answer.text + "\n다시 검색해도 찾지 못했습니다."
+
+    @tool
+    def ask_history(question: str) -> str:
+        """요구사항과 변경 이력에 대한 질문에 출처(문서, 버전, 요청자, 수정자)와 함께 답한다.
+        출처를 찾지 못하면 사용자에게 대안을 고르게 한다(자동으로 진행됨).
+        결과 문자열을 그대로 사용자에게 전달하고, 출처를 덧붙이거나 지어내지 않는다."""
+        try:
+            out = guarded(lambda: ask_with_alternatives(question))
+        except GraphInterrupt:
+            raise  # waiting for the user: keep the cached answer
+        answers.clear()
+        return out
+
+    @tool
+    def add_requirement(title: str, content: str, requester: str, modifier: str) -> str:
+        """요구사항 하나를 수동으로 추가한다. ID는 자동 부여된다.
+        requester와 modifier는 사용자가 말한 값만 쓰고, 없으면 호출하지 말고 묻는다."""
+        def run():
+            service.check_actors(requester, modifier)
+            if not _confirm(f"요구사항을 추가하고 새 버전 문서를 만듭니다.\n제목: {title}\n내용: {content}\n"
+                            f"요청자 {requester}, 수정자 {modifier}. 진행할까요?"):
+                return CANCELED
+            with service.exclusive():  # the new version must hold exactly this change
+                key = service.add_requirement_manual(
+                    db_path, chroma_dir, title, content, requester, modifier, store=store)
+                return finish(f"추가 완료: {key}")
+        return guarded(run)
+
+    @tool
+    def update_requirement(req_key: str, content: str, requester: str, modifier: str) -> str:
+        """기존 요구사항(예: REQ-003)의 내용을 수동으로 수정한다.
+        requester와 modifier는 사용자가 말한 값만 쓰고, 없으면 호출하지 말고 묻는다."""
+        def run():
+            service.check_actors(requester, modifier)
+            if not _confirm(f"{req_key}의 내용을 다음으로 수정하고 새 버전 문서를 만듭니다.\n{content}\n"
+                            f"요청자 {requester}, 수정자 {modifier}. 진행할까요?"):
+                return CANCELED
+            with service.exclusive():
+                service.update_requirement_manual(
+                    db_path, chroma_dir, req_key, content, requester, modifier, store=store)
+                return finish(f"수정 완료: {req_key}")
+        return guarded(run)
+
+    @tool
+    def delete_requirement(req_key: str, requester: str, modifier: str) -> str:
+        """요구사항(예: REQ-006)을 수동으로 삭제 처리한다. 되돌릴 수 없으므로 사용자가 삭제를 분명히 요청했을 때만 호출한다.
+        requester와 modifier는 사용자가 말한 값만 쓰고, 없으면 호출하지 말고 묻는다."""
+        def run():
+            service.check_actors(requester, modifier)
+            if not _confirm(f"{req_key}를 삭제하고 새 버전 문서를 만듭니다 "
+                            f"(요청자 {requester}, 수정자 {modifier}). 진행할까요?"):
+                return CANCELED
+            with service.exclusive():
+                service.delete_requirement_manual(db_path, chroma_dir, req_key, requester, modifier, store=store)
+                return finish(f"삭제 완료: {req_key}")
+        return guarded(run)
+
+    @tool
+    def create_new_version() -> str:
+        """수동 변경을 반영한 새 버전 PRD Markdown 파일을 새로 생성한다(원본은 수정하지 않음)."""
+        def run():
+            r = service.create_new_version(db_path, output_dir)
+            return f"새 버전 생성: {r.path} ({r.name} v{r.version}, 요구사항 {r.requirement_count}개)"
+        return guarded(run)
+
+    return [ingest_document, ask_history, add_requirement, update_requirement,
+            delete_requirement, create_new_version]

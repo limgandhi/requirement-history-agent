@@ -12,7 +12,7 @@ Rules that keep it honest:
   built by code from SQLite, so they are checked exactly in run_eval.judge(), never by an LLM.
 - The verdict is advisory. It never changes PASS/FAIL or the exit code, because an LLM verdict
   can vary from run to run. A flagged answer is a prompt to read it, not a failure.
-- Only answers that found something are judged. "찾지 못했다" answers have no claim to check.
+- Only answers that found something are judged. "찾지 못했습니다" answers have no claim to check.
 - Same Bedrock model as the answerer (config), temperature 0. A model rating its own output tends
   to be lenient, which is one more reason the verdict is advisory.
 """

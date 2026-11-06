@@ -26,7 +26,9 @@ function el(tag, className, text) {
 
 function addMessage(role, text) {
   const box = $("messages");
-  box.appendChild(el("div", "msg " + role, text));
+  const node = el("div", "msg " + role, text);
+  const loading = $("loading");
+  if (loading) box.insertBefore(node, loading); else box.appendChild(node);
   box.scrollTop = box.scrollHeight;
 }
 
@@ -36,6 +38,21 @@ function setBusy(value) {
   $("text").disabled = value;
   $("file").disabled = value;
   $("new-chat").disabled = value;
+  showLoading(value);
+}
+
+// "Waiting for the answer" bubble, always the last item in the chat while a request is running.
+function showLoading(on) {
+  const box = $("messages");
+  const old = $("loading");
+  if (old) old.remove();
+  if (!on) return;
+  const bubble = el("div", "msg agent loading");
+  bubble.id = "loading";
+  bubble.setAttribute("role", "status");
+  bubble.append(el("span", "spinner"), el("span", "", "답변을 생성하는 중입니다..."));
+  box.appendChild(bubble);
+  box.scrollTop = box.scrollHeight;
 }
 
 async function api(path, options) {

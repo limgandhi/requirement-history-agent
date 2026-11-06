@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>요구사항 이력 에이전트</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
   <header>
@@ -22,11 +22,11 @@
       <form id="form" class="composer">
         <textarea id="text" rows="2" placeholder="질문하거나 요청하세요. 예: 투표 기간은 최대 며칠이야?"></textarea>
         <div class="composer-buttons">
+          <button id="new-chat" type="button" title="화면을 비우고 새 대화를 시작합니다">새 대화</button>
           <label class="file-button">문서 올리기
             <input id="file" type="file" accept=".md,text/markdown" hidden>
           </label>
           <button id="send" type="submit">보내기</button>
-          <button id="new-chat" type="button" title="화면을 비우고 새 대화를 시작합니다">새 대화</button>
         </div>
       </form>
       <p class="hint">요청자·수정자를 위에 적으면 추가·수정·삭제·문서 입력 요청에 자동으로 함께 전달됩니다.</p>
@@ -43,6 +43,6 @@
       <div id="history" class="history" hidden></div>
     </section>
   </main>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2"></script>
 </body>
 </html>
