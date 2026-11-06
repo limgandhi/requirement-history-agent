@@ -1,7 +1,7 @@
 """LangGraph agent: tool routing and per-thread memory, with a stub model (no Bedrock)."""
 from langchain_core.messages import AIMessage, ToolMessage
 
-from interfaces.agent.agent import build_agent, reply_text
+from src.interfaces.agent.agent import build_agent, reply_text
 
 
 class StubModel:

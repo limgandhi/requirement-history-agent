@@ -1,10 +1,10 @@
 """run_eval.py - 개발 사이클마다 돌리는 정답셋 기반 평가.
 
-    python evals/run_eval.py                 # 전체
-    python evals/run_eval.py --only hist     # id가 hist로 시작하는 문항만
-    python evals/run_eval.py --no-history    # eval_history.jsonl에 기록하지 않음
-    python evals/run_eval.py --judge         # 답변 문장을 LLM 심사자도 평가(참고용, 통과 여부에는 영향 없음)
-    python evals/run_eval.py --ragas         # RAGAS faithfulness·answer_relevancy 점수 산출(참고용)
+    python evaluation/run_eval.py                 # 전체
+    python evaluation/run_eval.py --only hist     # id가 hist로 시작하는 문항만
+    python evaluation/run_eval.py --no-history    # eval_history.jsonl에 기록하지 않음
+    python evaluation/run_eval.py --judge         # 답변 문장을 LLM 심사자도 평가(참고용, 통과 여부에는 영향 없음)
+    python evaluation/run_eval.py --ragas         # RAGAS faithfulness·answer_relevancy 점수 산출(참고용)
 
 eval_set.json의 각 문항을 실제 Bedrock으로 질의응답(core.qa.ask)해 기대값과 비교하고
 eval_result.json(문항별 결과)과 eval_history.jsonl(실행 한 줄 요약, 추세 확인용)에 남긴다.
@@ -28,17 +28,17 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from core.change_detection.changes import ingest_new_version  # noqa: E402
-from core.ingest.ingest import ingest_document  # noqa: E402
-from core.manual.manual import add_requirement, delete_requirement, update_requirement  # noqa: E402
-from core.qa.qa import ask  # noqa: E402
-from evals.judge import evidence_for, evidence_list, judge_answer  # noqa: E402
-from infra.db.db import connect, init_schema  # noqa: E402
-from infra.indexing.indexing import get_vectorstore, index_document  # noqa: E402
-from infra.llm.llm import fallback_count  # noqa: E402
+from src.core.change_detection.changes import ingest_new_version  # noqa: E402
+from src.core.ingest.ingest import ingest_document  # noqa: E402
+from src.core.manual.manual import add_requirement, delete_requirement, update_requirement  # noqa: E402
+from src.core.qa.qa import ask  # noqa: E402
+from src.evaluation.judge import evidence_for, evidence_list, judge_answer  # noqa: E402
+from src.infrastructure.db.db import connect, init_schema  # noqa: E402
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document  # noqa: E402
+from src.infrastructure.llm.llm import fallback_count  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 EVAL_SET = HERE / "eval_set.json"
@@ -101,7 +101,7 @@ def judge(case: dict, answer) -> tuple[bool, str]:
 
 
 def llm_judge(llm, conn, question: str, answer) -> dict:
-    """Advisory LLM verdict on the answer text (see evals/judge.py). Never raises."""
+    """Advisory LLM verdict on the answer text (see evaluation/judge.py). Never raises."""
     try:
         v = judge_answer(llm, question, answer.text, evidence_for(conn, answer))
         return {"ok": v.ok, "supported": v.supported, "answers_question": v.answers_question, "reason": v.reason}
@@ -113,12 +113,12 @@ def run(cases: list[dict], use_judge: bool = False, use_ragas: bool = False) -> 
     results = []
     judge_model = None
     if use_judge:
-        from infra.llm.llm import get_llm
+        from src.infrastructure.llm.llm import get_llm
 
         judge_model = get_llm()
     scorer = None
     if use_ragas:
-        from evals.ragas_metrics import RagasScorer  # imported only when asked: ragas is slow to import
+        from src.evaluation.ragas_metrics import RagasScorer  # imported only when asked: ragas is slow to import
 
         scorer = RagasScorer()
     with tempfile.TemporaryDirectory(prefix="req_eval_", ignore_cleanup_errors=True) as tmp:  # Windows keeps Chroma files open

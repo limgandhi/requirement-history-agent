@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from core.change_detection.changes import ingest_new_version
-from core.ingest.ingest import ingest_document
-from core.manual.manual import add_requirement, delete_requirement, update_requirement
-from core.qa.qa import ask
-from infra.db.db import connect, init_schema
-from infra.indexing.indexing import get_vectorstore, index_document
+from src.core.change_detection.changes import ingest_new_version
+from src.core.ingest.ingest import ingest_document
+from src.core.manual.manual import add_requirement, delete_requirement, update_requirement
+from src.core.qa.qa import ask
+from src.infrastructure.db.db import connect, init_schema
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

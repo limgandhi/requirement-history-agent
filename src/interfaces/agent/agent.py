@@ -12,9 +12,9 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.types import Command
 
-from infra.llm.llm import get_llm
-from infra.llm.tracer import get_tracer
-from interfaces.tools.tools import build_tools
+from src.infrastructure.llm.llm import get_llm
+from src.infrastructure.llm.tracer import get_tracer
+from src.interfaces.tools.tools import build_tools
 
 SYSTEM_PROMPT = """당신은 요구사항 이력 에이전트다. 반드시 제공된 tool로만 일한다.
 - 요구사항·이력 질문은 ask_history로 답하고, 결과를 그대로 전달한다. 출처를 지어내지 않는다.

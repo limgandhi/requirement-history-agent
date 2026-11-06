@@ -17,14 +17,14 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 ## 사용자 확인 (interrupt)
 
 - 사용자에게 확인·선택을 받는 곳은 모두 LangGraph `interrupt()`로 구현한다(문서 입력·추가·수정·삭제의 실행 확인, 출처를 못 찾았을 때의 대안 선택). 프롬프트 지시만으로 확인을 대신하지 않는다.
-- `interrupt()`는 `interfaces/tools/tools.py`에서만 호출하고, 재개는 `interfaces/agent/agent.py`의 `run_turn(agent, text, config, respond)`가 맡는다. 콘솔 입출력(`cli_respond`)만 `main.py`에 둔다.
+- `interrupt()`는 `src/interfaces/tools/tools.py`에서만 호출하고, 재개는 `src/interfaces/agent/agent.py`의 `run_turn(agent, text, config, respond)`가 맡는다. 콘솔 입출력(`cli_respond`)만 `main.py`에 둔다.
 - 재개 시 tool이 처음부터 다시 실행되므로 `interrupt()` 앞의 코드는 부작용이 없어야 한다(검증·조회만). 저장은 확인 뒤에 한다.
 
 ## 기술 스택
 
 - Python, LangChain(`langchain-aws`, `langchain-chroma`), LangGraph(에이전트 그래프), `python-dotenv`
 - LLM: Bedrock `global.anthropic.claude-sonnet-4-5-20250929-v1:0`, `us-east-1`, temperature 0
-- 폴백 LLM: Bedrock `global.anthropic.claude-haiku-4-5-20251001-v1:0` (기본 LLM이 2번 시도 후에도 실패할 때만 그 호출을 전환, 리전·temperature 동일, 전환 사실은 로그와 CLI 안내로 알림. `infra/llm/llm.py`의 `get_llm()`)
+- 폴백 LLM: Bedrock `global.anthropic.claude-haiku-4-5-20251001-v1:0` (기본 LLM이 2번 시도 후에도 실패할 때만 그 호출을 전환, 리전·temperature 동일, 전환 사실은 로그와 CLI 안내로 알림. `src/infrastructure/llm/llm.py`의 `get_llm()`)
 - 임베딩: Bedrock `amazon.titan-embed-text-v2:0`, `us-east-1`, 차원 1024로 시작
 - 구조화 데이터: SQLite (`documents`, `chunks`, `requirements`, `requirement_history` 등 목적별 테이블)
 - 의미 검색: Chroma 새 컬렉션 (예: `requirements_history`)
@@ -33,7 +33,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 
 ## LLM 호출 로그
 
-- 에이전트를 부르는 곳(`main.py`, `web/app.py`)은 `interfaces/agent/agent.py`의 `run_config(thread_id)`로 설정을 만든다. 여기에 trace 콜백이 들어 있어 LLM·도구 호출이 `data/logs/llm_trace.jsonl`에 JSON Lines로 남는다. 설정을 직접 만들면 로그가 빠진다.
+- 에이전트를 부르는 곳(`main.py`, `src/web/app.py`)은 `src/interfaces/agent/agent.py`의 `run_config(thread_id)`로 설정을 만든다. 여기에 trace 콜백이 들어 있어 LLM·도구 호출이 `data/logs/llm_trace.jsonl`에 JSON Lines로 남는다. 설정을 직접 만들면 로그가 빠진다.
 - 로그에는 요구사항 내용이 들어가므로 `data/` 밖으로 옮기거나 커밋하지 않는다. 끄려면 `.env`에 `TRACE_ENABLED=0`.
 
 ## 반드시 지킬 규칙
@@ -45,12 +45,12 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 3. **출처를 지어내지 않는다:** 출처를 찾지 못하면 "찾지 못했다"고 답하고 사용자가 대안을 고르도록 안내한다. 답변에는 문서, 버전, 요청자, 수정자 출처를 함께 보여 준다.
 4. **정확성이 속도보다 우선이다:** 응답 속도는 요구사항이 아니다. 정확한 출처와 답변을 우선한다.
 5. **핵심 로직은 UI와 분리한다:** 대화 진입점(`main.py`)과 에이전트·tool은 얇게 두고, 이후 웹 UI가 같은 로직을 재사용할 수 있어야 한다.
-   - 코드는 3계층으로 나누고 의존은 `interfaces → core → infra` 한 방향으로만 둔다. 설정(`config/`)은 루트에 두고 모든 계층이 읽는다.
-     - `interfaces/`: `agent/`, `tools/`. 기능은 `core/service/service.py`를 호출만 한다. `agent`는 LangGraph 그래프(agent 노드 ↔ ToolNode)로 tool을 골라 호출하고 대화 기록은 체크포인터가 관리한다. 여기에는 로직을 넣지 않는다.
-     - 루트 `web/`(FastAPI 서버와 정적 화면)도 `main.py`처럼 서비스 진입점이다. 웹 서버는 `python -m uvicorn --factory web.app:create_app --host 0.0.0.0 --port 8000`으로 띄운다. 여기에도 로직을 넣지 않고 `core/service`와 에이전트(`step`, `resume`)만 호출한다.
+   - 코드는 3계층으로 나누고 의존은 `interfaces → core → infrastructure` 한 방향으로만 둔다. 설정(`config/`)은 루트에 두고 모든 계층이 읽는다.
+     - `src/interfaces/`: `agent/`, `tools/`. 기능은 `src/core/service/service.py`를 호출만 한다. `agent`는 LangGraph 그래프(agent 노드 ↔ ToolNode)로 tool을 골라 호출하고 대화 기록은 체크포인터가 관리한다. 여기에는 로직을 넣지 않는다.
+     - 루트 `src/web/`(FastAPI 서버와 정적 화면)도 `main.py`처럼 서비스 진입점이다. 웹 서버는 `python -m uvicorn --factory src.web.app:create_app --host 0.0.0.0 --port 8000`으로 띄운다. 여기에도 로직을 넣지 않고 `src/core/service`와 에이전트(`step`, `resume`)만 호출한다.
      - 루트 `main.py`가 서비스 진입점이다. 인자 없이 `python main.py`로 에이전트 대화만 시작하며 기능별 명령은 없다. 여기에도 로직을 넣지 않는다.
-     - `core/`: `service/`(유스케이스 진입점), `ingest/`, `chunking/`, `extraction/`, `qa/`, `manual/`, `change_detection/`(2차: 새 버전 문서와 현재 요구사항 비교). UI와 무관한 핵심 로직.
-     - `infra/`: `db/`(SQLite), `indexing/`(Chroma), `llm/`(Bedrock, 폴백, LLM·도구 호출 로그 `tracer.py`). 외부 시스템 연결.
+     - `src/core/`: `service/`(유스케이스 진입점), `ingest/`, `chunking/`, `extraction/`, `qa/`, `manual/`, `change_detection/`(2차: 새 버전 문서와 현재 요구사항 비교). UI와 무관한 핵심 로직.
+     - `src/infrastructure/`: `db/`(SQLite), `indexing/`(Chroma), `llm/`(Bedrock, 폴백, LLM·도구 호출 로그 `tracer.py`). 외부 시스템 연결.
 6. **기존 자료는 건드리지 않는다:** `practices/day*_practice/`는 참고용이다. 수정하지 않고, 그 안의 `chroma_db`와 `sds_policies` 컬렉션도 사용하지 않는다.
 7. **새 코드는 루트에 둔다:** `practices/day*_practice/` 안에 새 코드를 만들지 않는다.
 8. **자격증명을 코드에 넣지 않는다:** AWS 인증은 `.env`(`load_dotenv`)로만 한다. `.env`를 커밋하거나 출력하지 않는다.
@@ -61,7 +61,7 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 
 - `rag_chain.py`: Bedrock LLM·임베딩과 Chroma 연결 방식
 - `chunking_md.py`: Markdown 헤딩 단위 청킹
-- `retriever.py`, `hybrid.py`: 검색 방식 (하이브리드: 한국어 BM25 0.3 + 벡터 0.7, 요구사항 청크만 대상. `infra/indexing/indexing.py`)
+- `retriever.py`, `hybrid.py`: 검색 방식 (하이브리드: 한국어 BM25 0.3 + 벡터 0.7, 요구사항 청크만 대상. `src/infrastructure/indexing/indexing.py`)
 - `verify_sources.py`: 출처 검증 방식
 
 ## 샘플과 검증
@@ -75,11 +75,11 @@ Markdown 요구사항 문서에서 요구사항을 추출하고, 변경 이력�
 
 ## 정답셋 평가와 LLM 심사
 
-- `python evals/run_eval.py`가 `evals/eval_set.json`을 실제 Bedrock으로 돌려 기대값(키워드, 출처)과 대조한다. 출처는 코드로 정확히 비교하며 LLM에 맡기지 않는다.
-- `--judge`를 붙이면 `evals/judge.py`의 LLM 심사자가 답변 문장이 근거에 충실한지(`supported`), 질문에 답했는지(`answers_question`)를 추가로 본다. 참고용이라 PASS/FAIL·종료 코드에 영향을 주지 않으며, 기본은 꺼짐이다(문항당 Bedrock 호출 1회 증가). 심사 결과로 통과 기준을 바꾸지 않는다.
-- `--ragas`를 붙이면 `evals/ragas_metrics.py`가 RAGAS `faithfulness`·`answer_relevancy`(0~1)를 산출한다. 역시 참고용이며 기본은 꺼짐이다(문항당 Bedrock 호출 여러 번). ragas를 쓰는 코드는 `RAGAS_DO_NOT_TRACK`을 설정하고 vertexai 가짜 모듈을 등록하는 이 파일을 거쳐야 한다(직접 `import ragas` 금지: 사용 통계 외부 전송, import 오류). Context Precision/Recall은 아직 없다(2단계).
-- 평가 도구는 `evals/`에 두고 서비스 코드(`core/`, `interfaces/`)가 `evals/`를 가져다 쓰지 않는다. `evals/judge.py`는 `core.qa.qa`를 읽기만 한다.
-- `run_eval.py`는 `evals/eval_result.json`을 덮어쓰므로 일부 문항만 돌린 뒤에는 커밋하지 않는다.
+- `python src/evaluation/run_eval.py`가 `src/evaluation/eval_set.json`을 실제 Bedrock으로 돌려 기대값(키워드, 출처)과 대조한다. 출처는 코드로 정확히 비교하며 LLM에 맡기지 않는다.
+- `--judge`를 붙이면 `src/evaluation/judge.py`의 LLM 심사자가 답변 문장이 근거에 충실한지(`supported`), 질문에 답했는지(`answers_question`)를 추가로 본다. 참고용이라 PASS/FAIL·종료 코드에 영향을 주지 않으며, 기본은 꺼짐이다(문항당 Bedrock 호출 1회 증가). 심사 결과로 통과 기준을 바꾸지 않는다.
+- `--ragas`를 붙이면 `src/evaluation/ragas_metrics.py`가 RAGAS `faithfulness`·`answer_relevancy`(0~1)를 산출한다. 역시 참고용이며 기본은 꺼짐이다(문항당 Bedrock 호출 여러 번). ragas를 쓰는 코드는 `RAGAS_DO_NOT_TRACK`을 설정하고 vertexai 가짜 모듈을 등록하는 이 파일을 거쳐야 한다(직접 `import ragas` 금지: 사용 통계 외부 전송, import 오류). Context Precision/Recall은 아직 없다(2단계).
+- 평가 도구는 `src/evaluation/`에 두고 서비스 코드(`src/core/`, `src/interfaces/`)가 `src/evaluation/`를 가져다 쓰지 않는다. `src/evaluation/judge.py`는 `core.qa.qa`를 읽기만 한다.
+- `run_eval.py`는 `src/evaluation/eval_result.json`을 덮어쓰므로 일부 문항만 돌린 뒤에는 커밋하지 않는다.
 
 ## 작업 방식
 

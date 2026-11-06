@@ -8,10 +8,10 @@ from langchain_core.tools import tool
 from langgraph.errors import GraphInterrupt
 from langgraph.types import interrupt
 
-from core.service import service
-from core.manual.new_version import DEFAULT_OUTPUT_DIR
-from core.qa.alternatives import MAX_ROUNDS, OPTIONS
-from core.qa.qa import format_answer
+from src.core.service import service
+from src.core.manual.new_version import DEFAULT_OUTPUT_DIR
+from src.core.qa.alternatives import MAX_ROUNDS, OPTIONS
+from src.core.qa.qa import format_answer
 
 CANCELED = "취소했습니다. 아무것도 저장하지 않았습니다."
 

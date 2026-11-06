@@ -1,7 +1,7 @@
 """T16: hybrid (BM25 + vector) search with a fake store (no Bedrock)."""
 from langchain_core.documents import Document
 
-from infra.indexing.indexing import search_chunks
+from src.infrastructure.indexing.indexing import search_chunks
 
 DOCS = {
     "REQ-002": ("REQ-002 조직 및 구성원 관리\n관리자는 이메일로 구성원을 초대할 수 있다. 초대받은 사용자만 참여할 수 있다.", 2),

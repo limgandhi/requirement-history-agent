@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from core.ingest.ingest import ingest_document
-from core.qa.qa import ask
-from infra.db.db import connect, init_schema
-from infra.indexing.indexing import get_vectorstore, index_document, search_chunks
+from src.core.ingest.ingest import ingest_document
+from src.core.qa.qa import ask
+from src.infrastructure.db.db import connect, init_schema
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document, search_chunks
 
 BIG = Path(__file__).resolve().parent.parent / "samples" / "LargePRDv1.md"
 REQUESTER, MODIFIER = "lee", "kim"

@@ -1,5 +1,5 @@
 """Tool wrappers: actor validation and error-as-text, with no Bedrock calls."""
-from interfaces.tools.tools import build_tools
+from src.interfaces.tools.tools import build_tools
 
 
 def _tools(tmp_path):

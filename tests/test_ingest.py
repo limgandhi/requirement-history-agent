@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from infra.db.db import TABLES, connect, init_schema
-from core.extraction.extraction import _ExtractedList
-from core.ingest.ingest import ingest_document, parse_document_name
+from src.infrastructure.db.db import TABLES, connect, init_schema
+from src.core.extraction.extraction import _ExtractedList
+from src.core.ingest.ingest import ingest_document, parse_document_name
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 
@@ -103,7 +103,7 @@ def test_parse_document_name(filename, expected):
 
 # ---- T8: ingest -> ask through the tools on an empty DB ----
 def _tools(tmp_path, name="c.db"):
-    from interfaces.tools.tools import build_tools
+    from src.interfaces.tools.tools import build_tools
 
     return {t.name: t for t in build_tools(tmp_path / name, tmp_path / "chroma")}
 
@@ -111,7 +111,7 @@ def _tools(tmp_path, name="c.db"):
 def test_tool_ingest_then_ask(tmp_path, monkeypatch):
     # Called outside a graph, so answer the confirmation interrupt with "yes" directly;
     # the interrupt flow itself is covered by test_confirm_interrupt.py.
-    monkeypatch.setattr("interfaces.tools.tools.interrupt", lambda payload: True)
+    monkeypatch.setattr("src.interfaces.tools.tools.interrupt", lambda payload: True)
     t = _tools(tmp_path)
     out = t["ingest_document"].invoke(
         {"path": str(SAMPLES / "PRDv1.md"), "requester": "lee", "modifier": "kim"})

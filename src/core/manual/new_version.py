@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from core.chunking.chunking import Chunk, chunk_markdown, format_change_info, split_change_info
+from src.core.chunking.chunking import Chunk, chunk_markdown, format_change_info, split_change_info
 
 DEFAULT_OUTPUT_DIR = Path("data") / "generated"
 

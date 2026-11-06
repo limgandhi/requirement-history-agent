@@ -1,9 +1,9 @@
 # 웹 API 명세
 
-`web/app.py` (FastAPI, `create_app` 팩토리) 기준. 로그인·권한은 없다.
+`src/web/app.py` (FastAPI, `create_app` 팩토리) 기준. 로그인·권한은 없다.
 
 ```
-python -m uvicorn --factory web.app:create_app --host 0.0.0.0 --port 8000
+python -m uvicorn --factory src.web.app:create_app --host 0.0.0.0 --port 8000
 ```
 
 - Base URL: `http://<host>:8000`
@@ -189,7 +189,7 @@ Markdown 문서를 `data/uploads/`에 저장한다. 저장만 하며 요구사�
 
 | 경로 | 설명 |
 |---|---|
-| `GET /` | 웹 화면(`web/static/index.html`) |
+| `GET /` | 웹 화면(`src/web/static/index.html`) |
 | `GET /static/*` | 정적 파일 |
 
 ## 호출 예 (curl)

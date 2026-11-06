@@ -3,8 +3,8 @@ import logging
 
 import pytest
 
-from infra.llm import llm as llm_mod
-from infra.llm.llm import FallbackLLM, fallback_count
+from src.infrastructure.llm import llm as llm_mod
+from src.infrastructure.llm.llm import FallbackLLM, fallback_count
 
 
 class Model:

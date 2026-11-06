@@ -20,11 +20,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from config import config
-from core.ingest.ingest import parse_document_name
-from core.manual.new_version import DEFAULT_OUTPUT_DIR
-from core.service import service
-from infra.db.db import DEFAULT_DB_PATH
-from interfaces.agent.agent import build_agent, pending_questions, resume, run_config, step, user_message
+from src.core.ingest.ingest import parse_document_name
+from src.core.manual.new_version import DEFAULT_OUTPUT_DIR
+from src.core.service import service
+from src.infrastructure.db.db import DEFAULT_DB_PATH
+from src.interfaces.agent.agent import build_agent, pending_questions, resume, run_config, step, user_message
 
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_UPLOAD_BYTES = 1024 * 1024  # 1 MB is far more than a requirements document needs

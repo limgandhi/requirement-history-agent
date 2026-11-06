@@ -3,7 +3,7 @@ import sqlite3
 
 import pytest
 
-from infra.db.db import TABLES, connect, init_schema
+from src.infrastructure.db.db import TABLES, connect, init_schema
 
 
 @pytest.fixture

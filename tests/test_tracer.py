@@ -10,8 +10,8 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.errors import GraphInterrupt
 
 from config import config
-from infra.llm.tracer import TEXT_LIMIT, FileTracer, get_text, get_tracer
-from interfaces.agent.agent import build_agent, run_config, run_turn
+from src.infrastructure.llm.tracer import TEXT_LIMIT, FileTracer, get_text, get_tracer
+from src.interfaces.agent.agent import build_agent, run_config, run_turn
 from interrupt_helpers import FakeStore, make_db
 
 

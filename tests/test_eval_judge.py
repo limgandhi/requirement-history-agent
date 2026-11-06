@@ -1,8 +1,8 @@
-"""LLM-as-judge for evals (evals/judge.py). Uses a stub LLM, so no Bedrock call."""
-from core.manual.manual import add_requirement
-from core.qa.qa import Answer, Source
-from evals.judge import Verdict, evidence_for, judge_answer
-from infra.db.db import connect, init_schema
+"""LLM-as-judge for evaluation (evaluation/judge.py). Uses a stub LLM, so no Bedrock call."""
+from src.core.manual.manual import add_requirement
+from src.core.qa.qa import Answer, Source
+from src.evaluation.judge import Verdict, evidence_for, judge_answer
+from src.infrastructure.db.db import connect, init_schema
 
 
 class StubLLM:
@@ -49,7 +49,7 @@ def test_verdict_is_ok_only_when_both_points_hold():
 
 def test_ragas_scorer_returns_scores_and_never_raises(monkeypatch):
     """RagasScorer.score(): per-metric failures become None plus an error text (no Bedrock call)."""
-    from evals import ragas_metrics
+    from src.evaluation import ragas_metrics
 
     class Metric:
         def __init__(self, value):

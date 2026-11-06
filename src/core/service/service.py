@@ -3,16 +3,16 @@ import threading
 from functools import wraps
 from pathlib import Path
 
-from infra.db.db import connect, init_schema
-from infra.db.validation import require_actors
-from infra.indexing.indexing import get_vectorstore, index_document
-from core.change_detection.changes import (
+from src.infrastructure.db.db import connect, init_schema
+from src.infrastructure.db.validation import require_actors
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document
+from src.core.change_detection.changes import (
     ChangeResult, format_detection, ingest_new_version, is_new_version, latest_version, plan_new_version)
-from core.ingest.ingest import IngestResult, ingest_document, parse_document_name
-from core.manual.manual import add_requirement, delete_requirement, update_requirement
-from core.manual.new_version import DEFAULT_OUTPUT_DIR, NewVersionResult, generate_new_version
-from core.qa.alternatives import format_candidates, similar_requirements
-from core.qa.qa import Answer, ask
+from src.core.ingest.ingest import IngestResult, ingest_document, parse_document_name
+from src.core.manual.manual import add_requirement, delete_requirement, update_requirement
+from src.core.manual.new_version import DEFAULT_OUTPUT_DIR, NewVersionResult, generate_new_version
+from src.core.qa.alternatives import format_candidates, similar_requirements
+from src.core.qa.qa import Answer, ask
 
 
 # Writes run one at a time inside this process (SQLite and Chroma are changed together, and the

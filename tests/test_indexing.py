@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from infra.db.db import connect, init_schema
-from infra.indexing.indexing import get_vectorstore, index_document, search_chunks
-from core.ingest.ingest import ingest_document
+from src.infrastructure.db.db import connect, init_schema
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document, search_chunks
+from src.core.ingest.ingest import ingest_document
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

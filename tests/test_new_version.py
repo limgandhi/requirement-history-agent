@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from core.chunking.chunking import chunk_markdown
-from infra.db.db import connect, init_schema
-from core.extraction.extraction import extract_requirements
-from core.ingest.ingest import ingest_document
-from core.manual.manual import add_requirement, delete_requirement, update_requirement
-from core.manual.new_version import generate_new_version
+from src.core.chunking.chunking import chunk_markdown
+from src.infrastructure.db.db import connect, init_schema
+from src.core.extraction.extraction import extract_requirements
+from src.core.ingest.ingest import ingest_document
+from src.core.manual.manual import add_requirement, delete_requirement, update_requirement
+from src.core.manual.new_version import generate_new_version
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 
@@ -121,7 +121,7 @@ def test_original_sample_file_unchanged_by_generation(tmp_path):
 # ---- change info (requester / modifier / modified date) written into the document ----
 
 def test_changed_requirements_carry_requester_modifier_and_date(env):
-    from core.chunking.chunking import split_change_info
+    from src.core.chunking.chunking import split_change_info
 
     conn, _, out = env
     update_requirement(conn, "REQ-003", "투표 기간은 최대 14일로 제한한다.", "park", "choi")

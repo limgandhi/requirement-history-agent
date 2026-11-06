@@ -7,9 +7,9 @@ credentials from .env (load_dotenv).
 import uuid
 
 from config import config
-from infra.db.db import DEFAULT_DB_PATH
-from infra.llm.llm import fallback_count
-from interfaces.agent.agent import build_agent, run_config, run_turn
+from src.infrastructure.db.db import DEFAULT_DB_PATH
+from src.infrastructure.llm.llm import fallback_count
+from src.interfaces.agent.agent import build_agent, run_config, run_turn
 
 
 _YES = ("y", "yes", "예", "네", "응", "ㅇ")

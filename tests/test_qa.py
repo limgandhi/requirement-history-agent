@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from infra.db.db import connect, init_schema
-from infra.indexing.indexing import get_vectorstore, index_document
-from core.ingest.ingest import ingest_document
-from core.qa.qa import _LLMAnswer, ask
+from src.infrastructure.db.db import connect, init_schema
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document
+from src.core.ingest.ingest import ingest_document
+from src.core.qa.qa import _LLMAnswer, ask
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 
@@ -63,8 +63,8 @@ def test_voting_period_answer_has_sources(env):
 
 def test_manual_change_sources_have_no_none(tmp_path):
     """Manual history rows have no document_id; sources must still name a document."""
-    from core.manual.manual import add_requirement, update_requirement
-    from core.qa.qa import Answer, _requirement_context, _sources, format_answer
+    from src.core.manual.manual import add_requirement, update_requirement
+    from src.core.qa.qa import Answer, _requirement_context, _sources, format_answer
 
     conn = connect(tmp_path / "m.db")
     init_schema(conn)

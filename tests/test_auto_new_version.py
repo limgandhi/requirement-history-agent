@@ -45,7 +45,7 @@ def test_each_save_makes_its_own_file(tmp_path):
     out = tmp_path / "out"
     run_agent(tmp_path, ScriptedModel("update_requirement", UPDATE), FakeStore(), [True], out)
     # second change on the same DB: run_agent rebuilds the DB, so drive the service directly
-    from core.service import service
+    from src.core.service import service
     service.delete_requirement_manual(tmp_path / "t.db", tmp_path / "chroma", "REQ-006", "park", "choi", store=FakeStore())
     r = service.create_new_version(tmp_path / "t.db", out)
     assert r.version == 3 and _files(out) == ["PRDv2.md", "PRDv3.md"]

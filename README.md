@@ -71,7 +71,7 @@ AWS_SESSION_TOKEN=...        # 임시 자격증명을 쓸 때만
 python main.py
 
 # 웹 UI (같은 네트워크의 다른 PC에서도 접속 가능) -> http://localhost:8000
-python -m uvicorn --factory web.app:create_app --host 0.0.0.0 --port 8000
+python -m uvicorn --factory src.web.app:create_app --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -140,26 +140,26 @@ REQ-003의 내용을 ... 새 버전 문서를 만듭니다. 진행할까요?
 
 ### 4-1. 3계층 구조
 
-의존은 **한 방향**(`interfaces → core → infra`)으로만 흐릅니다. `config/`는 모든 계층이 읽고, `main.py`·`web/`은 진입점입니다.
+의존은 **한 방향**(`interfaces → core → infrastructure`)으로만 흐릅니다. `config/`는 모든 계층이 읽고, `main.py`·`src/web/`은 진입점입니다.
 
 ```mermaid
 flowchart TB
     subgraph Entry["진입점 (로직 없음)"]
         CLI["main.py<br/>콘솔 입출력 cli_respond"]
-        WEB["web/app.py<br/>FastAPI + 정적 화면"]
+        WEB["src/web/app.py<br/>FastAPI + 정적 화면"]
     end
-    subgraph IF["interfaces/"]
+    subgraph IF["src/interfaces/"]
         AG["agent/agent.py<br/>LangGraph: agent ↔ ToolNode<br/>step / resume / run_turn"]
         TL["tools/tools.py<br/>LangChain tool 6종<br/>interrupt() 호출은 여기서만"]
     end
-    subgraph CORE["core/ (UI와 무관한 핵심 로직)"]
+    subgraph CORE["src/core/ (UI와 무관한 핵심 로직)"]
         SV["service/service.py<br/>유스케이스 진입점 · 쓰기 락"]
         IN["ingest · chunking · extraction"]
         QA["qa · alternatives"]
         MN["manual · new_version"]
         CD["change_detection"]
     end
-    subgraph INFRA["infra/ (외부 시스템)"]
+    subgraph INFRA["src/infrastructure/ (외부 시스템)"]
         DB[("db: SQLite<br/>data/requirements.db")]
         IX[("indexing: Chroma + BM25<br/>data/chroma_db")]
         LL["llm: Bedrock Sonnet → Haiku 폴백<br/>tracer.py 호출 로그"]
@@ -243,9 +243,9 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant B as 브라우저 (app.js)
-    participant W as web/app.py
+    participant W as src/web/app.py
     participant A as 에이전트 (step/resume)
-    participant S as core/service
+    participant S as src/core/service
     B->>W: POST /api/chat {session_id, message}
     W->>A: step(user_message)
     A-->>W: reply 또는 pending(확인 질문)
@@ -268,10 +268,10 @@ sequenceDiagram
 requirement-history-agent/
 ├── main.py                      # 콘솔 진입점: 대화 루프, cli_respond (입출력만)
 ├── config/config.py             # 모델 ID, 리전, Chroma 경로, 로그 설정 (.env 로드)
-├── interfaces/
+├── src/interfaces/
 │   ├── agent/agent.py           # LangGraph 그래프, run_config / step / resume / run_turn
 │   └── tools/tools.py           # tool 6종, interrupt() 확인, 입력 폴더 제한
-├── core/
+├── src/core/
 │   ├── service/service.py       # 유스케이스 진입점, 쓰기 락, 조회용 함수(list_*)
 │   ├── ingest/ingest.py         # 문서 파싱, 첫 입력(SQLite 저장), 문서명·버전 해석
 │   ├── chunking/chunking.py     # Markdown 헤딩 단위 청킹
@@ -281,17 +281,17 @@ requirement-history-agent/
 │   ├── manual/manual.py         # 수동 추가·수정·삭제
 │   ├── manual/new_version.py    # 새 버전 PRD 생성
 │   └── change_detection/        # 상위 버전 문서 vs 현재 요구사항 비교 (detection.py, changes.py)
-├── infra/
+├── src/infrastructure/
 │   ├── db/db.py                 # SQLite 스키마·연결
 │   ├── db/validation.py         # require_actors: 요청자·수정자 필수 검증
 │   ├── indexing/indexing.py     # Chroma 색인, 한국어 BM25 + 벡터 하이브리드 검색
 │   └── llm/llm.py, tracer.py    # Bedrock LLM/임베딩, Haiku 폴백, JSONL 호출 로그
-├── web/
+├── src/web/
 │   ├── app.py                   # FastAPI (create_app 팩토리)
 │   └── static/                  # index.html, app.js, style.css
 ├── samples/                     # PRDv1.md, PRDv2.md, LargePRDv1.md (정기투표앱 가상 PRD)
 ├── tests/                       # pytest (일부는 실제 Bedrock 호출)
-├── evals/                       # 정답셋 평가 (eval_set.json, run_eval.py, 결과·이력)
+├── src/evaluation/                       # 정답셋 평가 (eval_set.json, run_eval.py, 결과·이력)
 ├── data/                        # 실행 시 생성 (DB, Chroma, 업로드, 생성 문서, 로그) — git 제외
 ├── practices/day*_practice/     # 참고용 기존 자료 (수정·사용 금지)
 ├── SERVICE.md  CLAUDE.md  TASKS.md
@@ -366,8 +366,8 @@ erDiagram
 2. **수동/자동 구분** — 이력에 `manual` / `auto` 기록. 문서 입력·변경 감지는 `auto`, 사람이 직접 추가·수정·삭제하면 `manual`.
 3. **출처를 지어내지 않음** — 못 찾으면 "찾지 못했다"고 답하고 대안 선택을 안내.
 4. **정확성 우선** — 응답 속도는 요구사항이 아님.
-5. **UI와 핵심 로직 분리** — `main.py`·`web/`·`agent`·`tools`에는 로직을 두지 않고 `core/service`를 호출만 함.
-6. **사용자 확인은 모두 `interrupt()`** — `interfaces/tools/tools.py`에서만 호출, 재개는 `run_turn`/`step`이 담당.
+5. **UI와 핵심 로직 분리** — `main.py`·`src/web/`·`agent`·`tools`에는 로직을 두지 않고 `src/core/service`를 호출만 함.
+6. **사용자 확인은 모두 `interrupt()`** — `src/interfaces/tools/tools.py`에서만 호출, 재개는 `run_turn`/`step`이 담당.
 7. **원본 입력 문서는 수정하지 않음**, `practices/`는 건드리지 않음, 자격증명은 `.env`로만.
 
 ---
@@ -396,25 +396,25 @@ Bedrock을 실제로 호출하는 테스트는 비용과 외부 전송이 생기
 
 ### 정답셋 평가 (매 개발 사이클)
 
-`evals/`는 pytest와 별개로, 질문 세트에 기대값을 붙여 매 사이클 정확도를 추적하는 도구입니다.
+`src/evaluation/`는 pytest와 별개로, 질문 세트에 기대값을 붙여 매 사이클 정확도를 추적하는 도구입니다.
 
 ```powershell
-python evals/run_eval.py                  # 22문항 전체 (실제 Bedrock 호출)
-python evals/run_eval.py --only hist      # id가 hist로 시작하는 문항만 (기록은 남기지 않음)
-python evals/run_eval.py --judge          # + LLM 심사자가 답변 문장을 평가 (문항당 Bedrock 호출 1회 추가)
-python evals/run_eval.py --ragas          # + RAGAS faithfulness·answer_relevancy 점수 (문항당 Bedrock 호출 여러 번)
+python src/evaluation/run_eval.py                  # 22문항 전체 (실제 Bedrock 호출)
+python src/evaluation/run_eval.py --only hist      # id가 hist로 시작하는 문항만 (기록은 남기지 않음)
+python src/evaluation/run_eval.py --judge          # + LLM 심사자가 답변 문장을 평가 (문항당 Bedrock 호출 1회 추가)
+python src/evaluation/run_eval.py --ragas          # + RAGAS faithfulness·answer_relevancy 점수 (문항당 Bedrock 호출 여러 번)
 ```
 
 | 파일 | 내용 |
 |------|------|
-| `evals/eval_set.json` | 문항 22개: `fact` 10(PRDv1), `history` 10(변경 이력), `no_answer` 2. 문항마다 `expected`(`found`, `keywords`, `source`)를 적음. 문항을 추가하려면 이 파일만 고치면 됨 |
-| `evals/eval_result.json` | 마지막 실행의 문항별 결과(통과 여부, 사유, 답변, 폴백 사용 여부) |
-| `evals/eval_history.jsonl` | 실행마다 한 줄(시각, 커밋, 통과 수, 유형별 결과, 틀린 문항, 폴백 수). 직전 실행과 비교해 회귀를 알려 줌 |
+| `src/evaluation/eval_set.json` | 문항 22개: `fact` 10(PRDv1), `history` 10(변경 이력), `no_answer` 2. 문항마다 `expected`(`found`, `keywords`, `source`)를 적음. 문항을 추가하려면 이 파일만 고치면 됨 |
+| `src/evaluation/eval_result.json` | 마지막 실행의 문항별 결과(통과 여부, 사유, 답변, 폴백 사용 여부) |
+| `src/evaluation/eval_history.jsonl` | 실행마다 한 줄(시각, 커밋, 통과 수, 유형별 결과, 틀린 문항, 폴백 수). 직전 실행과 비교해 회귀를 알려 줌 |
 
 - `source`에 적은 항목(`req_key`, `action`, `source_type`, `requester`, `modifier`, `document`, `version`)을 모두 만족하는 출처가 하나 있어야 통과합니다.
 - 임시 DB·Chroma를 쓰므로 `data/`는 건드리지 않습니다. 틀린 문항이 있으면 종료 코드 1을 돌려줍니다.
-- `--judge`(LLM-as-judge, `evals/judge.py`): 답을 찾은 답변마다 근거(출처가 가리키는 요구사항과 이력)를 보여 주고 `supported`(내용이 모두 근거로 뒷받침됨)와 `answers_question`(질문에 답함)을 판정합니다. 출처는 코드가 정확히 대조하므로 심사하지 않고, 결과는 참고용이라 통과 여부·종료 코드에 영향이 없습니다. "확인 필요"로 표시된 문항은 사람이 읽어 보세요. 결과는 `eval_result.json`의 `llm_judge`와 `eval_history.jsonl`의 `judge`·`judge_flagged`에 남습니다.
-- `--ragas`(`evals/ragas_metrics.py`): 답을 찾은 답변마다 `faithfulness`(답변이 근거로 뒷받침되는 비율)와 `answer_relevancy`(질문과의 관련도)를 0~1로 산출하고 요약에 평균과 0.7 미만 문항을 보여 줍니다. 근거는 `--judge`와 같이 출처가 가리키는 요구사항과 이력입니다. 참고용이라 통과 여부·종료 코드에 영향이 없고, `answer_relevancy`는 짧고 정확한 답에도 낮게 나올 수 있어 추세와 이상치를 보는 용도입니다. Context Precision/Recall은 기준 답변이 없어 아직 없습니다. 패키지 `ragas`가 필요합니다(`pip install -r requirements.txt`).
+- `--judge`(LLM-as-judge, `src/evaluation/judge.py`): 답을 찾은 답변마다 근거(출처가 가리키는 요구사항과 이력)를 보여 주고 `supported`(내용이 모두 근거로 뒷받침됨)와 `answers_question`(질문에 답함)을 판정합니다. 출처는 코드가 정확히 대조하므로 심사하지 않고, 결과는 참고용이라 통과 여부·종료 코드에 영향이 없습니다. "확인 필요"로 표시된 문항은 사람이 읽어 보세요. 결과는 `eval_result.json`의 `llm_judge`와 `eval_history.jsonl`의 `judge`·`judge_flagged`에 남습니다.
+- `--ragas`(`src/evaluation/ragas_metrics.py`): 답을 찾은 답변마다 `faithfulness`(답변이 근거로 뒷받침되는 비율)와 `answer_relevancy`(질문과의 관련도)를 0~1로 산출하고 요약에 평균과 0.7 미만 문항을 보여 줍니다. 근거는 `--judge`와 같이 출처가 가리키는 요구사항과 이력입니다. 참고용이라 통과 여부·종료 코드에 영향이 없고, `answer_relevancy`는 짧고 정확한 답에도 낮게 나올 수 있어 추세와 이상치를 보는 용도입니다. Context Precision/Recall은 기준 답변이 없어 아직 없습니다. 패키지 `ragas`가 필요합니다(`pip install -r requirements.txt`).
 - Sonnet 호출이 실패해 Haiku로 답한 문항은 `(폴백)`으로 표시되고 요약에 건수가 나옵니다.
 
 ---
@@ -460,7 +460,7 @@ python evals/run_eval.py --ragas          # + RAGAS faithfulness·answer_relevan
 - **`.env.example` 추가:** 필요한 키 이름만 담은 샘플 파일(값 없음)로 온보딩 단축.
 - **데이터 백업·초기화 절차:** SQLite와 Chroma를 항상 함께 백업·복원하는 방법, `data/` 초기화 스크립트.
 - **실제 화면 스크린샷·데모 GIF:** 웹 UI 사용법 섹션에 첨부.
-- **`CONTRIBUTING`/개발 가이드:** 계층 의존 규칙(`interfaces → core → infra`) 위반을 잡는 체크 방법.
+- **`CONTRIBUTING`/개발 가이드:** 계층 의존 규칙(`interfaces → core → infrastructure`) 위반을 잡는 체크 방법.
 
 ### 품질·안정성 (범위 안에서 가능한 개선)
 

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
-from infra.indexing.indexing import search_chunks
+from src.infrastructure.indexing.indexing import search_chunks
 
 _PROMPT = """너는 요구사항 이력 질의응답 도우미다. 아래 [근거]에 있는 내용만으로 질문에 답해라.
 
@@ -75,7 +75,7 @@ def _history_keys(conn: sqlite3.Connection, question: str, limit: int = 2) -> li
         if key not in keys and conn.execute("SELECT 1 FROM requirements WHERE req_key = ?", (key,)).fetchone():
             keys.append(key)
     if any(word in question for word in _HISTORY_WORDS):
-        from infra.indexing.indexing import korean_tokens
+        from src.infrastructure.indexing.indexing import korean_tokens
 
         # Few requirements are deleted, so BM25 (whose weights need many documents) is no use here:
         # rank by how many of the question's words the title or content shares.
@@ -154,7 +154,7 @@ def ask(conn: sqlite3.Connection, question: str, store=None, llm=None, k: int = 
         return Answer(text="관련 요구사항 출처를 찾지 못했다.", found=False)
 
     if llm is None:
-        from infra.llm.llm import get_llm
+        from src.infrastructure.llm.llm import get_llm
 
         llm = get_llm()
     context = "\n\n".join(_render(*c) for c in contexts.values())

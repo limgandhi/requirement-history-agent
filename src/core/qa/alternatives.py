@@ -9,7 +9,7 @@ The front end shows these options and sends the chosen id back.
 """
 import sqlite3
 
-from infra.indexing.indexing import search_chunks
+from src.infrastructure.indexing.indexing import search_chunks
 
 OPTIONS = [
     {"id": "similar", "label": "비슷한 요구사항 후보 보기"},

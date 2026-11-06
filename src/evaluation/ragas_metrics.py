@@ -39,7 +39,7 @@ from ragas.llms import LangchainLLMWrapper  # noqa: E402
 from ragas.metrics import Faithfulness, ResponseRelevancy  # noqa: E402
 
 from config import config  # noqa: E402
-from infra.llm.llm import get_embeddings, get_single_llm  # noqa: E402
+from src.infrastructure.llm.llm import get_embeddings, get_single_llm  # noqa: E402
 
 METRIC_NAMES = ("faithfulness", "answer_relevancy")
 

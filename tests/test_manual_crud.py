@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from infra.db.db import TABLES, connect, init_schema
-from core.ingest.ingest import ingest_document
-from infra.indexing.indexing import get_vectorstore, index_document, search_chunks
-from core.manual.manual import add_requirement, delete_requirement, update_requirement
-from core.qa.qa import ask
+from src.infrastructure.db.db import TABLES, connect, init_schema
+from src.core.ingest.ingest import ingest_document
+from src.infrastructure.indexing.indexing import get_vectorstore, index_document, search_chunks
+from src.core.manual.manual import add_requirement, delete_requirement, update_requirement
+from src.core.qa.qa import ask
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from core.change_detection.changes import ingest_new_version, plan_new_version
-from core.ingest.ingest import ingest_document
-from core.manual.manual import update_requirement
-from core.manual.new_version import generate_new_version
-from core.service import service
-from infra.db.db import connect, init_schema
+from src.core.change_detection.changes import ingest_new_version, plan_new_version
+from src.core.ingest.ingest import ingest_document
+from src.core.manual.manual import update_requirement
+from src.core.manual.new_version import generate_new_version
+from src.core.service import service
+from src.infrastructure.db.db import connect, init_schema
 from interrupt_helpers import FakeStore, ScriptedModel, run_agent, status
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
@@ -62,7 +62,7 @@ def test_a_version_without_changes_is_reported_before_asking(tmp_path):
 
 
 def test_upload_folder_limit(tmp_path):
-    from interfaces.agent.agent import build_agent, run_turn
+    from src.interfaces.agent.agent import build_agent, run_turn
     make = __import__("interrupt_helpers").make_db
     make(tmp_path)
     allowed = tmp_path / "uploads"

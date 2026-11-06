@@ -1,5 +1,5 @@
 """T13: when no source is found, say so and let the user pick an alternative via interrupt()."""
-from core.qa.qa import _LLMAnswer
+from src.core.qa.qa import _LLMAnswer
 from interrupt_helpers import FakeStore, ScriptedModel, run_agent
 
 

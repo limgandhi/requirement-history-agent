@@ -18,7 +18,7 @@ Rules that keep it honest:
 """
 from pydantic import BaseModel
 
-from core.qa.qa import _render, _requirement_context
+from src.core.qa.qa import _render, _requirement_context
 
 _PROMPT = """너는 요구사항 이력 질의응답의 답변을 평가하는 심사자다. [근거]만 사실로 인정한다.
 

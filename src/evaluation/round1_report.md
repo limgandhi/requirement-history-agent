@@ -2,10 +2,10 @@
 
 다음 개선 때 이 파일을 보고 무엇을 고칠지 정할 수 있도록, 결과와 해석, 개선 후보를 적었다.
 
-- 실행: 2026-11-05 09:21 UTC, 명령 `python evals/run_eval.py --judge --ragas`
-- 코드 기준: 커밋 `ca50a95` + 아직 커밋하지 않은 평가 도구(`evals/judge.py`, `evals/ragas_metrics.py`, `--judge`·`--ragas` 옵션). `eval_history.jsonl`의 commit 값은 `ca50a95`이지만 작업 트리가 깨끗한 상태가 아니었다.
-- 데이터: 실행마다 임시 DB·Chroma를 새로 만든다(`data/`는 쓰지 않는다). 질문 22개(`evals/eval_set.json`).
-- 원자료: `evals/eval_result.json`(문항별 답변·사유·심사·RAGAS), `evals/eval_history.jsonl`(실행 요약 한 줄)
+- 실행: 2026-11-05 09:21 UTC, 명령 `python src/evaluation/run_eval.py --judge --ragas`
+- 코드 기준: 커밋 `ca50a95` + 아직 커밋하지 않은 평가 도구(`src/evaluation/judge.py`, `src/evaluation/ragas_metrics.py`, `--judge`·`--ragas` 옵션). `eval_history.jsonl`의 commit 값은 `ca50a95`이지만 작업 트리가 깨끗한 상태가 아니었다.
+- 데이터: 실행마다 임시 DB·Chroma를 새로 만든다(`data/`는 쓰지 않는다). 질문 22개(`src/evaluation/eval_set.json`).
+- 원자료: `src/evaluation/eval_result.json`(문항별 답변·사유·심사·RAGAS), `src/evaluation/eval_history.jsonl`(실행 요약 한 줄)
 
 ## 1. 요약
 
@@ -83,7 +83,7 @@
 - 근거: 삭제 이력의 요청자는 park, 수정자는 choi.
 - 심사는 "삭제한 주체(요청자 park)를 빠뜨렸다"고 지적했다. 정답셋은 `choi`만 요구해 통과했다.
 - 판단: 질문의 "누가"가 요청자·수정자 중 누구를 뜻하는지 모호하다. 답변 아래에 출처 목록(요청자 park, 수정자 choi)이 붙으므로 정보는 사용자에게 간다. 다만 답변 문장 자체에 둘을 모두 쓰게 하려면 프롬프트에서 "누가"에는 요청자와 수정자를 함께 쓰라고 지시할 수 있다.
-- 개선 후보: (a) `core/qa/qa.py` 프롬프트에 "사람을 묻는 질문에는 요청자와 수정자를 모두 써라" 추가. (b) 정답셋 `hist-02`의 기대값에 `park`도 넣기. (a)를 하면 (b)로 검증한다. Haiku가 답한 문항이라 Sonnet으로 다시 돌려 같은지 먼저 본다.
+- 개선 후보: (a) `src/core/qa/qa.py` 프롬프트에 "사람을 묻는 질문에는 요청자와 수정자를 모두 써라" 추가. (b) 정답셋 `hist-02`의 기대값에 `park`도 넣기. (a)를 하면 (b)로 검증한다. Haiku가 답한 문항이라 Sonnet으로 다시 돌려 같은지 먼저 본다.
 
 ### 4-4. `hist-09` — 답변에 근거 원문이 그대로 노출됨
 
@@ -104,4 +104,4 @@
 1. Sonnet 한도가 풀린 뒤 **같은 명령으로 다시 실행**해, 이번 결과 중 폴백·산출 못 한 부분(`hist-01`, `hist-02`, `hist-03`의 점수)을 확정한다.
 2. 4-3, 4-4의 프롬프트 개선을 적용한 뒤 `hist-02`, `hist-09`, `hist-10`이 어떻게 바뀌는지, 정답셋 22/22가 유지되는지 확인한다.
 3. 비교 기준(Round 1): 정답셋 22/22, 심사 19/20(확인 필요 `hist-02`), faithfulness 평균 1.0, answer_relevancy 평균 0.566(18문항).
-4. 비교는 `evals/eval_history.jsonl`의 직전 행(이 실행, `time` 2026-11-05T09:21:06Z)과 한다.
+4. 비교는 `src/evaluation/eval_history.jsonl`의 직전 행(이 실행, `time` 2026-11-05T09:21:06Z)과 한다.

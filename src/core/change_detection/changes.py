@@ -12,11 +12,11 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from core.change_detection.detection import Detection, Item, detect_changes
-from core.chunking.chunking import Chunk, chunk_markdown
-from core.extraction.extraction import Requirement, extract_requirements
-from core.ingest.ingest import existing_document_error, parse_document_name
-from infra.db.validation import require_actors
+from src.core.change_detection.detection import Detection, Item, detect_changes
+from src.core.chunking.chunking import Chunk, chunk_markdown
+from src.core.extraction.extraction import Requirement, extract_requirements
+from src.core.ingest.ingest import existing_document_error, parse_document_name
+from src.infrastructure.db.validation import require_actors
 
 
 @dataclass
@@ -163,7 +163,7 @@ def apply_plan(conn: sqlite3.Connection, plan: Plan, path: str | Path, requester
             history(rid, "delete", c.old_content, None, c)
 
         if store is not None:
-            from infra.indexing.indexing import drop_old_vectors, upsert_requirement_vector
+            from src.infrastructure.indexing.indexing import drop_old_vectors, upsert_requirement_vector
 
             source = {"document_id": document_id, "document_name": plan.name, "version": plan.version}
             for c, rid in vectors:
