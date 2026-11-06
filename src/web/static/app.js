@@ -35,6 +35,7 @@ function setBusy(value) {
   $("send").disabled = value || pendingQuestions.length > 0;  // a question is waiting: answer it first
   $("text").disabled = value;
   $("file").disabled = value;
+  $("new-chat").disabled = value;
 }
 
 async function api(path, options) {
@@ -157,6 +158,18 @@ async function restoreSession() {
     showPending(state.pending || []);
   } catch (e) { /* a new conversation */ }
 }
+
+// Clear = start a fresh conversation under a new session id. The old one stays in the server DB.
+$("new-chat").addEventListener("click", () => {
+  if (busy) return;
+  if (pendingQuestions.length && !confirm("답하지 않은 확인 요청이 있습니다. 새 대화를 시작하면 취소됩니다. 계속할까요?")) return;
+  sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g, "");
+  store.set("session_id", sessionId);
+  $("messages").replaceChildren();
+  showPending([]);
+  $("text").value = "";
+  $("text").focus();
+});
 
 $("form").addEventListener("submit", (event) => {
   event.preventDefault();

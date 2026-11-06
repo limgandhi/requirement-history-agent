@@ -148,3 +148,21 @@ def test_chat_loop_passes_input_to_agent_and_stops_on_exit(monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda _="": next(inputs))
     run_chat(agent=FakeAgent())
     assert "응답" in capsys.readouterr().out
+
+
+def test_chat_loop_clear_starts_a_new_thread_without_calling_agent(monkeypatch, capsys):
+    from langchain_core.messages import AIMessage
+    from main import run_chat
+
+    threads = []
+
+    class FakeAgent:
+        def invoke(self, state, config):
+            threads.append(config["configurable"]["thread_id"])
+            return {"messages": [AIMessage(content="응답")]}
+
+    inputs = iter(["안녕", "/clear", "다시", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _="": next(inputs))
+    run_chat(agent=FakeAgent())
+    assert len(threads) == 2 and threads[0] != threads[1]  # /clear itself never reaches the agent
+    assert "새 대화" in capsys.readouterr().out

@@ -37,7 +37,7 @@ def cli_respond(payload: dict):
 def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) -> None:
     agent = agent or build_agent(str(db_path), chroma_dir)
     cfg = run_config(str(uuid.uuid4()))  # one conversation per run; LLM / tool calls are traced
-    print("에이전트를 시작합니다. 종료하려면 빈 줄 또는 exit 을 입력하세요.")
+    print("에이전트를 시작합니다. 종료하려면 빈 줄 또는 exit, 새 대화는 /clear 를 입력하세요.")
     while True:
         try:
             text = input("> ").strip()
@@ -45,6 +45,10 @@ def run_chat(db_path=DEFAULT_DB_PATH, chroma_dir=config.CHROMA_DIR, agent=None) 
             break
         if not text or text.lower() in ("exit", "quit"):
             break
+        if text.lower() == "/clear":  # fresh conversation: new thread id, old one is simply not used again
+            cfg = run_config(str(uuid.uuid4()))
+            print("새 대화를 시작합니다. 이전 대화 내용은 이어지지 않습니다.")
+            continue
         before = fallback_count()
         print(run_turn(agent, text, cfg, cli_respond))
         if fallback_count() > before:  # tell the user a lighter model answered
